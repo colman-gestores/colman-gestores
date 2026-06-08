@@ -5,1156 +5,547 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Colman — Gestores</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --azul:#1A3A6B; --celeste:#75AADB; --cel-l:#EAF3FB;
-  --verde:#1E8449; --ver-l:#D5F5E3;
-  --ambar:#D68910; --amb-l:#FEF9E7;
-  --rojo:#C0392B;  --roj-l:#FADBD8;
-  --naranja:#E67E22; --nar-l:#FDEBD0;
-  --gris:#F4F6F8; --txt:#1C2833; --txt2:#5D6D7E;
-  --borde:#E0E6EE; --radio:14px; --radio-s:8px;
-}
-body { font-family:'DM Sans',sans-serif; background:var(--gris); color:var(--txt); min-height:100vh; padding-bottom:90px; }
-
-/* ══ PANTALLAS FIJAS ══ */
-.pantalla { position:fixed; inset:0; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
-
-/* ── SETUP ── */
-#pantalla-setup { background:var(--azul); }
-.hex-logo { width:56px; height:56px; background:var(--celeste); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:22px; color:var(--azul); margin:0 auto 14px; }
-.setup-h1 { color:white; font-size:22px; font-weight:700; text-align:center; margin-bottom:6px; }
-.setup-sub { color:rgba(255,255,255,0.6); font-size:12px; text-align:center; line-height:1.6; margin-bottom:22px; }
-.setup-card { background:white; border-radius:16px; padding:20px; width:100%; max-width:380px; }
-.setup-card h2 { font-size:13px; font-weight:700; color:var(--azul); margin-bottom:14px; }
-.step { display:flex; gap:10px; align-items:flex-start; margin-bottom:12px; }
-.step-n { width:22px; height:22px; border-radius:50%; background:var(--azul); color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
-.step-t { font-size:12px; color:var(--txt); line-height:1.5; }
-.step-t a { color:var(--celeste); }
-.step-t code { background:#F0F3F6; padding:2px 5px; border-radius:4px; font-family:'DM Mono',monospace; font-size:11px; }
-.s-input { width:100%; padding:10px 12px; border:1.5px solid var(--borde); border-radius:var(--radio-s); font-family:'DM Sans',sans-serif; font-size:13px; color:var(--txt); outline:none; margin-top:10px; }
-.s-input:focus { border-color:var(--celeste); }
-.s-btn { width:100%; padding:12px; background:var(--azul); border:none; border-radius:var(--radio-s); color:white; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; margin-top:12px; }
-.s-err { color:var(--rojo); font-size:12px; margin-top:8px; display:none; }
-
-/* ── LOGIN ── */
-#pantalla-login { background:var(--azul); }
-.login-card { background:white; border-radius:16px; padding:24px 20px; width:100%; max-width:360px; }
-.login-title { font-size:17px; font-weight:700; color:var(--azul); margin-bottom:4px; }
-.login-sub { font-size:12px; color:var(--txt2); margin-bottom:20px; }
-.l-group { margin-bottom:14px; }
-.l-label { font-size:11px; font-weight:600; color:var(--txt2); margin-bottom:5px; display:block; }
-.l-input { width:100%; padding:11px 12px; border:1.5px solid var(--borde); border-radius:var(--radio-s); font-family:'DM Sans',sans-serif; font-size:14px; color:var(--txt); background:white; outline:none; transition:border-color .2s; }
-.l-input:focus { border-color:var(--celeste); }
-.l-btn { width:100%; padding:13px; background:var(--azul); border:none; border-radius:var(--radio-s); color:white; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; margin-top:4px; transition:opacity .2s; }
-.l-btn:disabled { opacity:0.6; }
-.l-err { background:var(--roj-l); border:1px solid var(--rojo); border-radius:var(--radio-s); padding:10px 12px; font-size:12px; color:var(--rojo); font-weight:600; margin-top:12px; display:none; }
-.l-user-info { font-size:11px; color:rgba(255,255,255,0.5); text-align:center; margin-top:14px; }
-
-/* ── LOADING ── */
-#pantalla-loading { background:rgba(26,58,107,0.94); display:none; }
-.spinner { width:36px; height:36px; border:3px solid rgba(255,255,255,0.2); border-top-color:var(--celeste); border-radius:50%; animation:spin .8s linear infinite; }
-@keyframes spin { to{transform:rotate(360deg)} }
-#loading-msg { color:white; font-size:13px; margin-top:14px; }
-
-/* ── SYNC DOT ── */
-.sync-dot { width:8px; height:8px; border-radius:50%; background:#4CAF50; display:inline-block; margin-left:5px; }
-.sync-dot.syncing { background:var(--ambar); animation:pulse 1s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-/* ── HEADER ── */
-.header { background:var(--azul); padding:16px 16px 12px; position:sticky; top:0; z-index:100; }
-.header-top { display:flex; align-items:center; justify-content:space-between; }
-.logo { display:flex; align-items:center; gap:8px; }
-.logo-hex { width:32px; height:32px; background:var(--celeste); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--azul); }
-.logo-txt { color:white; font-weight:700; font-size:15px; }
-.logo-txt span { color:var(--celeste); }
-.header-right { display:flex; align-items:center; gap:8px; }
-.zona-badge { background:var(--celeste); color:var(--azul); font-size:10px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; display:flex; align-items:center; gap:4px; }
-.btn-salir { background:rgba(255,255,255,0.12); border:none; border-radius:6px; color:rgba(255,255,255,0.7); font-size:11px; padding:4px 8px; cursor:pointer; font-family:'DM Sans',sans-serif; }
-.fecha-hoy { color:rgba(255,255,255,0.55); font-size:11px; margin-top:5px; }
-.tabs { display:flex; gap:4px; background:rgba(255,255,255,0.08); border-radius:10px; padding:3px; margin-top:10px; }
-.tab { flex:1; padding:7px 4px; border:none; border-radius:8px; background:transparent; color:rgba(255,255,255,0.6); font-family:'DM Sans',sans-serif; font-size:11px; font-weight:500; cursor:pointer; transition:all .2s; }
-.tab.active { background:white; color:var(--azul); font-weight:700; }
-
-/* ── VISTAS ── */
-.vista { display:none; padding:14px 12px; }
-.vista.active { display:block; }
-
-/* ── COMPONENTES ── */
-.alerta-banner { background:var(--nar-l); border:1px solid var(--naranja); border-radius:var(--radio-s); padding:10px 12px; display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-.sec-title { font-size:11px; font-weight:700; color:var(--txt2); text-transform:uppercase; letter-spacing:0.8px; margin:16px 0 8px; }
-.empty { text-align:center; padding:40px 20px; color:var(--txt2); font-size:13px; }
-
-/* ── TARJETA ── */
-.cliente-card { background:white; border-radius:var(--radio); border:1px solid var(--borde); margin-bottom:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
-.card-header { display:flex; align-items:center; justify-content:space-between; padding:12px 14px 8px; cursor:pointer; }
-.card-info { flex:1; }
-.card-nombre { font-weight:600; font-size:14px; color:var(--txt); }
-.card-meta { font-size:11px; color:var(--txt2); margin-top:2px; }
-.card-badges { display:flex; gap:5px; margin-top:6px; flex-wrap:wrap; }
-.badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:600; }
-.badge-bien    { background:var(--ver-l); color:var(--verde); }
-.badge-medio   { background:var(--amb-l); color:var(--ambar); }
-.badge-mal     { background:var(--roj-l); color:var(--rojo); }
-.badge-vence   { background:var(--nar-l); color:var(--naranja); }
-.badge-vigente { background:var(--cel-l); color:var(--azul); }
-.badge-vencido { background:var(--roj-l); color:var(--rojo); }
-.badge-zona    { background:#EEF2FF; color:#3730A3; }
-.card-chevron  { color:var(--txt2); font-size:18px; transition:transform .25s; margin-left:8px; flex-shrink:0; }
-.card-chevron.open { transform:rotate(180deg); }
-.card-detail { display:none; padding:0 14px 14px; border-top:1px solid var(--borde); }
-.card-detail.open { display:block; animation:fadeIn .2s ease; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
-.detail-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #F0F3F6; }
-.detail-row:last-of-type { border-bottom:none; }
-.detail-label { color:var(--txt2); font-size:12px; }
-.detail-value { font-weight:600; color:var(--txt); font-size:12px; text-align:right; max-width:55%; word-break:break-word; }
-
-/* ── MENSAJES ── */
-.msg-tabs { display:flex; gap:6px; margin:10px 0 0; }
-.msg-tab { flex:1; padding:6px 4px; border:1.5px solid var(--borde); border-radius:var(--radio-s); background:white; font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; color:var(--txt2); cursor:pointer; text-align:center; }
-.msg-tab.active { border-color:var(--azul); color:var(--azul); background:var(--cel-l); }
-.wa-box { background:#E7F8EE; border:1px solid #A9DFBF; border-radius:var(--radio-s); padding:10px 12px; margin-top:8px; }
-.wa-box.cli { background:#FFF8E1; border-color:#FFD54F; }
-.wa-label { font-size:11px; font-weight:700; color:#27AE60; margin-bottom:6px; }
-.wa-box.cli .wa-label { color:#E65100; }
-.wa-msg { font-size:12px; color:#1C5631; line-height:1.6; font-family:'DM Mono',monospace; white-space:pre-wrap; }
-.wa-box.cli .wa-msg { color:#4E342E; }
-.wa-btn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:10px; background:#25D366; border:none; border-radius:var(--radio-s); color:white; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
-.wa-btn.cli-btn { background:#FF8F00; }
-
-/* ── ACCIONES ── */
-.card-actions { display:flex; gap:8px; margin-top:10px; }
-.btn-editar { flex:1; padding:8px; background:var(--cel-l); border:1px solid var(--celeste); border-radius:var(--radio-s); color:var(--azul); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; cursor:pointer; }
-.btn-borrar { flex:1; padding:8px; background:var(--roj-l); border:1px solid var(--rojo); border-radius:var(--radio-s); color:var(--rojo); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; cursor:pointer; }
-.confirm-box { background:var(--roj-l); border:1px solid var(--rojo); border-radius:var(--radio-s); padding:12px; margin-top:10px; display:none; }
-.confirm-box.open { display:block; }
-.confirm-txt { font-size:12px; color:var(--rojo); font-weight:600; margin-bottom:10px; }
-.confirm-btns { display:flex; gap:8px; }
-.confirm-si { flex:1; padding:8px; background:var(--rojo); border:none; border-radius:var(--radio-s); color:white; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:700; cursor:pointer; }
-.confirm-no { flex:1; padding:8px; background:white; border:1px solid var(--borde); border-radius:var(--radio-s); color:var(--txt2); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; cursor:pointer; }
-
-/* ── MODAL ── */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500; display:none; align-items:flex-end; }
-.modal-overlay.open { display:flex; }
-.modal-box { background:white; border-radius:20px 20px 0 0; padding:20px 16px 32px; width:100%; max-height:90vh; overflow-y:auto; animation:slideUp .25s ease; }
-@keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
-.modal-title { font-weight:700; font-size:16px; color:var(--azul); margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; }
-.modal-close { background:none; border:none; font-size:22px; color:var(--txt2); cursor:pointer; }
-
-/* ── FORM ── */
-.form-card { background:white; border-radius:var(--radio); border:1px solid var(--borde); padding:16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
-.form-title { font-weight:700; font-size:15px; color:var(--azul); margin-bottom:14px; }
-.form-group { margin-bottom:12px; }
-.form-label { font-size:11px; font-weight:600; color:var(--txt2); margin-bottom:5px; display:block; }
-.form-input, .form-select { width:100%; padding:10px 12px; border:1.5px solid var(--borde); border-radius:var(--radio-s); font-family:'DM Sans',sans-serif; font-size:14px; color:var(--txt); background:white; outline:none; transition:border-color .2s; appearance:none; }
-.form-input:focus, .form-select:focus { border-color:var(--celeste); }
-.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.form-btn { width:100%; padding:13px; background:var(--azul); border:none; border-radius:var(--radio-s); color:white; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; margin-top:4px; }
-.nota-box { background:var(--ver-l); border:1px solid var(--verde); border-radius:var(--radio-s); padding:10px 12px; font-size:12px; color:var(--verde); font-weight:600; display:none; margin-top:10px; text-align:center; }
-
-/* ── STATS ── */
-.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
-.stat-card { background:white; border-radius:var(--radio); border:1px solid var(--borde); padding:12px 14px; }
-.stat-num { font-size:26px; font-weight:700; line-height:1; }
-.stat-lbl { font-size:11px; color:var(--txt2); margin-top:4px; font-weight:500; }
-.stat-verde{color:var(--verde)} .stat-ambar{color:var(--ambar)} .stat-rojo{color:var(--rojo)} .stat-naranja{color:var(--naranja)}
-.prog-bar-wrap { background:#EEF1F5; border-radius:20px; height:8px; overflow:hidden; margin-top:6px; }
-.prog-bar { height:100%; border-radius:20px; }
-.search-wrap { position:relative; margin-bottom:12px; }
-.search-ico { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--txt2); }
-.search-input { width:100%; padding:9px 12px 9px 34px; border:1.5px solid var(--borde); border-radius:var(--radio-s); font-family:'DM Sans',sans-serif; font-size:14px; background:white; outline:none; }
-.semaforo-amarillo { background:#FFFDE7; border-left:4px solid #F9A825; }
-.semaforo-naranja  { background:#FFF3E0; border-left:4px solid #E67E22; }
-.semaforo-rojo     { background:#FFEBEE; border-left:4px solid #C0392B; }
-.deuda-chip { display:inline-flex; align-items:center; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-top:4px; }
-.deuda-amarillo { background:#FFF9C4; color:#F57F17; }
-.deuda-naranja  { background:#FFE0B2; color:#E65100; }
-.deuda-rojo     { background:#FFCDD2; color:#B71C1C; }
-.deuda-total-card { background:white; border-radius:var(--radio); border:1px solid var(--borde); padding:14px; margin-bottom:12px; }
-.filtro-row { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-.filtro-btn { padding:6px 12px; border:1.5px solid var(--borde); border-radius:20px; background:white; font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; color:var(--txt2); cursor:pointer; }
-.filtro-btn.active { border-color:var(--azul); color:var(--azul); background:var(--cel-l); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--azul:#1A3A6B;--cel:#75AADB;--cel-l:#EAF3FB;--verde:#1E8449;--ver-l:#D5F5E3;--ambar:#D68910;--amb-l:#FEF9E7;--rojo:#C0392B;--roj-l:#FADBD8;--naranja:#E67E22;--nar-l:#FDEBD0;--gris:#F4F6F8;--txt:#1C2833;--txt2:#5D6D7E;--borde:#E0E6EE;--r:14px;--rs:8px}
+body{font-family:'DM Sans',sans-serif;background:var(--gris);color:var(--txt);min-height:100vh;padding-bottom:80px}
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--azul);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--cel);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{color:white;font-size:13px}
+/* HEADER */
+.hdr{background:var(--azul);padding:14px 14px 10px;position:sticky;top:0;z-index:100}
+.hdr-top{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:8px}
+.hex{width:30px;height:30px;background:var(--cel);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--azul)}
+.logo-txt{color:white;font-weight:700;font-size:14px}
+.logo-txt span{color:var(--cel)}
+.sync{width:8px;height:8px;border-radius:50%;background:#4CAF50;display:inline-block}
+.sync.on{background:var(--ambar);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.zona-chip{background:var(--cel);color:var(--azul);font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.fecha{color:rgba(255,255,255,.5);font-size:10px;margin-top:4px}
+.tabs{display:flex;gap:3px;background:rgba(255,255,255,.08);border-radius:10px;padding:3px;margin-top:10px}
+.tab{flex:1;padding:6px 2px;border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.6);font-family:inherit;font-size:10px;font-weight:500;cursor:pointer}
+.tab.on{background:white;color:var(--azul);font-weight:700}
+/* VISTAS */
+.vista{display:none;padding:12px}
+.vista.on{display:block}
+/* BANNER */
+.banner{background:var(--nar-l);border:1px solid var(--naranja);border-radius:var(--rs);padding:10px 12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:var(--naranja);font-weight:600}
+.sec{font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px}
+.empty{text-align:center;padding:40px 20px;color:var(--txt2);font-size:13px}
+/* CARD */
+.card{background:white;border-radius:var(--r);border:1px solid var(--borde);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;cursor:pointer}
+.c-nom{font-weight:600;font-size:14px;color:var(--txt)}
+.c-meta{font-size:11px;color:var(--txt2);margin-top:2px}
+.badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.badge{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;display:inline-block}
+.b-bien{background:var(--ver-l);color:var(--verde)}
+.b-medio{background:var(--amb-l);color:var(--ambar)}
+.b-mal{background:var(--roj-l);color:var(--rojo)}
+.b-vence{background:var(--nar-l);color:var(--naranja)}
+.b-vigente{background:var(--cel-l);color:var(--azul)}
+.b-vencido{background:var(--roj-l);color:var(--rojo)}
+.b-zona{background:#EEF2FF;color:#3730A3}
+.chev{color:var(--txt2);font-size:16px;margin-left:8px;transition:transform .25s}
+.chev.on{transform:rotate(180deg)}
+/* DETALLE */
+.det{display:none;padding:0 14px 14px;border-top:1px solid var(--borde)}
+.det.on{display:block}
+.drow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #F0F3F6;font-size:12px}
+.drow:last-of-type{border-bottom:none}
+.dlbl{color:var(--txt2)}
+.dval{font-weight:600;text-align:right;max-width:55%;word-break:break-word}
+/* MSG TABS */
+.mtabs{display:flex;gap:6px;margin:10px 0 0}
+.mtab{flex:1;padding:6px 4px;border:1.5px solid var(--borde);border-radius:var(--rs);background:white;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;text-align:center}
+.mtab.on{border-color:var(--azul);color:var(--azul);background:var(--cel-l)}
+.wabox{border-radius:var(--rs);padding:10px 12px;margin-top:8px}
+.wabox.g{background:#E7F8EE;border:1px solid #A9DFBF}
+.wabox.c{background:#FFF8E1;border:1px solid #FFD54F}
+.walbl{font-size:11px;font-weight:700;margin-bottom:6px}
+.wabox.g .walbl{color:#27AE60}
+.wabox.c .walbl{color:#E65100}
+.wamsg{font-size:12px;line-height:1.6;font-family:'DM Mono',monospace;white-space:pre-wrap}
+.wabox.g .wamsg{color:#1C5631}
+.wabox.c .wamsg{color:#4E342E}
+.wabtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;padding:10px;border:none;border-radius:var(--rs);color:white;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.wabtn.g{background:#25D366}
+.wabtn.c{background:#FF8F00}
+/* ACCIONES */
+.accs{display:flex;gap:8px;margin-top:10px}
+.btn-edit{flex:1;padding:8px;background:var(--cel-l);border:1px solid var(--cel);border-radius:var(--rs);color:var(--azul);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.btn-del{flex:1;padding:8px;background:var(--roj-l);border:1px solid var(--rojo);border-radius:var(--rs);color:var(--rojo);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.confirm{background:var(--roj-l);border:1px solid var(--rojo);border-radius:var(--rs);padding:12px;margin-top:10px;display:none}
+.confirm.on{display:block}
+.conf-txt{font-size:12px;color:var(--rojo);font-weight:600;margin-bottom:10px}
+.conf-btns{display:flex;gap:8px}
+.conf-si{flex:1;padding:8px;background:var(--rojo);border:none;border-radius:var(--rs);color:white;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.conf-no{flex:1;padding:8px;background:white;border:1px solid var(--borde);border-radius:var(--rs);color:var(--txt2);font-family:inherit;font-size:12px;cursor:pointer}
+/* SEMAFORO */
+.card.sam-a{border-left:4px solid #F9A825}
+.card.sam-n{border-left:4px solid var(--naranja)}
+.card.sam-r{border-left:4px solid var(--rojo)}
+.deuda-chip{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;display:inline-block}
+.dc-a{background:#FFF9C4;color:#F57F17}
+.dc-n{background:#FFE0B2;color:#E65100}
+.dc-r{background:#FFCDD2;color:#B71C1C}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:flex-end}
+.modal-bg.on{display:flex}
+.modal{background:white;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-title{font-weight:700;font-size:16px;color:var(--azul);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;font-size:22px;color:var(--txt2);cursor:pointer}
+/* FORM */
+.fcard{background:white;border-radius:var(--r);border:1px solid var(--borde);padding:16px}
+.ftit{font-weight:700;font-size:15px;color:var(--azul);margin-bottom:14px}
+.fg{margin-bottom:12px}
+.fl{font-size:11px;font-weight:600;color:var(--txt2);margin-bottom:5px;display:block}
+.fi,.fs{width:100%;padding:10px 12px;border:1.5px solid var(--borde);border-radius:var(--rs);font-family:inherit;font-size:14px;color:var(--txt);background:white;outline:none;appearance:none}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fbtn{width:100%;padding:13px;background:var(--azul);border:none;border-radius:var(--rs);color:white;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.nota{background:var(--ver-l);border:1px solid var(--verde);border-radius:var(--rs);padding:10px;font-size:12px;color:var(--verde);font-weight:600;display:none;margin-top:10px;text-align:center}
+/* STATS */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.scard{background:white;border-radius:var(--r);border:1px solid var(--borde);padding:12px 14px}
+.snum{font-size:26px;font-weight:700;line-height:1}
+.slbl{font-size:11px;color:var(--txt2);margin-top:4px;font-weight:500}
+/* FILTROS */
+.frow2{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.fbtn2{padding:5px 10px;border:1.5px solid var(--borde);border-radius:20px;background:white;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer}
+.fbtn2.on{border-color:var(--azul);color:var(--azul);background:var(--cel-l)}
+.swrap{position:relative;margin-bottom:12px}
+.sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--txt2);font-size:14px}
+.sinput{width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--borde);border-radius:var(--rs);font-family:inherit;font-size:14px;background:white;outline:none}
 </style>
 </head>
 <body>
 
-<!-- ══ SETUP ══ -->
-<div class="pantalla" id="pantalla-setup" style="display:none">
-  <div class="hex-logo">G</div>
-  <h1 class="setup-h1">GRUPO COLMAN</h1>
-  <p class="setup-sub">Configuración inicial — una sola vez.<br>Necesitamos conectar tu base de datos Firebase.</p>
-  <div class="setup-card">
-    <h2>🔧 Pasos para configurar</h2>
-    <div class="step"><div class="step-n">1</div><div class="step-t">Entrá a <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> con tu cuenta Google y creá un proyecto nuevo (ej: <strong>colman-gestores</strong>).</div></div>
-    <div class="step"><div class="step-n">2</div><div class="step-t"><strong>Realtime Database → Crear base de datos.</strong> Elegí <strong>southamerica-east1</strong> y modo <strong>bloqueado</strong>.</div></div>
-    <div class="step"><div class="step-n">3</div><div class="step-t">En <strong>Reglas</strong> de la base de datos, pegá:<br><code>{"rules":{".read":"auth != null",".write":"auth != null"}}</code></div></div>
-    <div class="step"><div class="step-n">4</div><div class="step-t"><strong>Authentication → Comenzar → Correo/Contraseña.</strong> Creá un usuario por gestor.</div></div>
-    <div class="step"><div class="step-n">5</div><div class="step-t">Copiá la URL de tu base de datos:<br><code>https://tu-proyecto-default-rtdb.firebaseio.com</code></div></div>
-    <div class="step"><div class="step-n">6</div><div class="step-t">Copiá también la <strong>API Key</strong> de tu proyecto (Configuración del proyecto → General → apiKey).</div></div>
-    <input class="s-input" id="cfg-url" placeholder="URL de la base de datos (firebaseio.com)" type="url">
-    <input class="s-input" id="cfg-key" placeholder="API Key del proyecto Firebase" style="margin-top:8px">
-    <div class="s-err" id="setup-err">⚠️ Verificá los datos ingresados.</div>
-    <button class="s-btn" onclick="guardarConfig()">Guardar y continuar →</button>
-  </div>
-</div>
+<div id="loading"><div class="spinner"></div><p id="loading-msg">Conectando...</p></div>
 
-<!-- ══ LOGIN ══ -->
-<div class="pantalla" id="pantalla-login" style="display:none">
-  <div class="hex-logo">G</div>
-  <div class="login-card">
-    <div class="login-title">Bienvenido/a</div>
-    <div class="login-sub">Ingresá con tu usuario de Colman Gestores</div>
-    <div class="l-group"><label class="l-label">Email</label><input class="l-input" id="l-email" type="email" placeholder="gestor@colman.com" autocomplete="email"></div>
-    <div class="l-group"><label class="l-label">Contraseña</label><input class="l-input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
-    <button class="l-btn" id="l-btn" onclick="iniciarSesion()">Ingresar</button>
-    <div class="l-err" id="l-err"></div>
-  </div>
-  <div class="l-user-info">Grupo Colman · Sistema de Gestores</div>
-</div>
-
-<!-- ══ LOADING ══ -->
-<div class="pantalla" id="pantalla-loading" style="display:none">
-  <div class="spinner"></div>
-  <p id="loading-msg">Conectando...</p>
-</div>
-
-<!-- ══ APP ══ -->
-<div id="app-principal" style="display:none">
-  <div class="header">
-    <div class="header-top">
-      <div class="logo">
-        <div class="logo-hex">G</div>
-        <div class="logo-txt">GRUPO <span>COLMAN</span></div>
-      </div>
-      <div class="header-right">
-        <div id="zona-badge-header" style="display:none" class="zona-badge">
-          <span id="zona-badge-txt"></span>
-          <span class="sync-dot" id="sync-dot"></span>
-        </div>
-        <button class="btn-salir" onclick="cerrarSesion()">Salir</button>
+<div id="app" style="display:none">
+  <div class="hdr">
+    <div class="hdr-top">
+      <div class="logo"><div class="hex">G</div><div class="logo-txt">GRUPO <span>COLMAN</span></div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="zona-chip" class="zona-chip" style="display:none"><span id="zona-txt"></span><span class="sync" id="sync-dot"></span></div>
       </div>
     </div>
-    <div class="fecha-hoy" id="fecha-hoy"></div>
+    <div class="fecha" id="fecha"></div>
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('alertas')">🔔 Alertas</button>
-      <button class="tab" onclick="switchTab('clientes')">👥 Clientes</button>
-      <button class="tab" onclick="switchTab('atrasados')">⚠️ Deudas</button>
-      <button class="tab" onclick="switchTab('nuevo')">➕ Nuevo</button>
-      <button class="tab" onclick="switchTab('resumen')">📊 Resumen</button>
+      <button class="tab on" onclick="setTab('alertas')">🔔 Alertas</button>
+      <button class="tab" onclick="setTab('clientes')">👥 Clientes</button>
+      <button class="tab" onclick="setTab('deudas')">⚠️ Deudas</button>
+      <button class="tab" onclick="setTab('nuevo')">➕ Nuevo</button>
+      <button class="tab" onclick="setTab('resumen')">📊 Resumen</button>
     </div>
   </div>
 
-  <div class="vista active" id="vista-alertas"><div id="alertas-container"></div></div>
-  <div class="vista" id="vista-clientes">
-    <select class="form-select" id="filtro-zona" onchange="onZonaChange()" style="margin-bottom:10px">
-      <option value="todas">Todas las zonas</option>
-      <option value="Zona Norte">Zona Norte</option>
-      <option value="Zona Oeste">Zona Oeste</option>
-      <option value="Zona Sudeste">Zona Sudeste</option>
+  <div class="vista on" id="v-alertas"><div id="c-alertas"></div></div>
+  <div class="vista" id="v-clientes">
+    <select class="fi" id="filtro-zona" onchange="onZona()" style="margin-bottom:10px">
+      <option value="">Todas las zonas</option>
+      <option value="Norte">Zona Norte</option>
+      <option value="Oeste">Zona Oeste</option>
+      <option value="Sudeste">Zona Sudeste</option>
     </select>
-    <div class="search-wrap">
-      <span class="search-ico">🔍</span>
-      <input class="search-input" id="buscador" placeholder="Buscar cliente..." oninput="renderClientes()">
-    </div>
-    <div id="clientes-container"></div>
+    <div class="swrap"><span class="sico">🔍</span><input class="sinput" id="buscar" placeholder="Buscar cliente..." oninput="renderClientes()"></div>
+    <div id="c-clientes"></div>
   </div>
-  <div class="vista" id="vista-atrasados"><div id="atrasados-container"></div></div>
-  <div class="vista" id="vista-nuevo">
-    <div class="form-card">
-      <div class="form-title">Registrar nuevo cliente</div>
-      <div class="form-group"><label class="form-label">Nombre y Apellido *</label><input class="form-input" id="f-nombre" placeholder="Ej: García María Elena"></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Zona *</label>
-          <select class="form-select" id="f-zona">
-            <option value="Zona Norte">Zona Norte</option>
-            <option value="Zona Oeste">Zona Oeste</option>
-            <option value="Zona Sudeste">Zona Sudeste</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Cómo paga *</label>
-          <select class="form-select" id="f-pago">
-            <option value="Bien">Bien</option>
-            <option value="Medio">Medio</option>
-            <option value="Mal">Mal</option>
-          </select>
-        </div>
+  <div class="vista" id="v-deudas"><div id="c-deudas"></div></div>
+  <div class="vista" id="v-nuevo">
+    <div class="fcard">
+      <div class="ftit">Registrar nuevo cliente</div>
+      <div class="fg"><label class="fl">Nombre y Apellido *</label><input class="fi" id="f-nom" placeholder="Ej: García María Elena"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Zona *</label><select class="fs" id="f-zona"><option value="Norte">Zona Norte</option><option value="Oeste">Zona Oeste</option><option value="Sudeste">Zona Sudeste</option></select></div>
+        <div class="fg"><label class="fl">Cómo paga *</label><select class="fs" id="f-pago"><option>Bien</option><option>Medio</option><option>Mal</option></select></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Monto</label><input class="form-input" id="f-monto" placeholder="$300.000"></div>
-        <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" id="f-fecha" type="date"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Monto</label><input class="fi" id="f-monto" placeholder="$300.000"></div>
+        <div class="fg"><label class="fl">Fecha fin</label><input class="fi" id="f-fecha" type="date"></div>
       </div>
-      <div class="form-group"><label class="form-label">Última vez que trabajó</label><input class="form-input" id="f-ultima" placeholder="Actualmente / fecha"></div>
-      <div class="form-group"><label class="form-label">Observaciones</label><input class="form-input" id="f-obs" placeholder="Notas del gestor..."></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Cuotas atrasadas</label><input class="form-input" id="f-cuotas" type="number" min="0" placeholder="0"></div>
-        <div class="form-group"><label class="form-label">Monto adeudado</label><input class="form-input" id="f-deuda" placeholder="$0"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Cuotas atrasadas</label><input class="fi" id="f-cuotas" type="number" min="0" placeholder="0"></div>
+        <div class="fg"><label class="fl">Monto adeudado</label><input class="fi" id="f-deuda" placeholder="$0"></div>
       </div>
-      <button class="form-btn" onclick="guardarCliente()">Guardar cliente</button>
-      <div class="nota-box" id="nota-guardado">✅ Cliente guardado y sincronizado ☁️</div>
+      <div class="fg"><label class="fl">Última actividad</label><input class="fi" id="f-ultima" placeholder="Actualmente"></div>
+      <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="f-obs" placeholder="Notas..."></div>
+      <button class="fbtn" onclick="guardarNuevo()">Guardar cliente</button>
+      <div class="nota" id="nota">✅ Cliente guardado y sincronizado ☁️</div>
     </div>
   </div>
-  <div class="vista" id="vista-resumen"><div id="resumen-container"></div></div>
+  <div class="vista" id="v-resumen"><div id="c-resumen"></div></div>
 </div>
 
 <!-- MODAL EDITAR -->
-<div class="modal-overlay" id="modal-editar">
-  <div class="modal-box">
+<div class="modal-bg" id="modal">
+  <div class="modal">
     <div class="modal-title">Editar cliente <button class="modal-close" onclick="cerrarModal()">✕</button></div>
-    <div class="form-group"><label class="form-label">Nombre y Apellido</label><input class="form-input" id="e-nombre"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Zona</label>
-        <select class="form-select" id="e-zona">
-          <option value="Zona Norte">Zona Norte</option>
-          <option value="Zona Oeste">Zona Oeste</option>
-          <option value="Zona Sudeste">Zona Sudeste</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Cómo paga</label>
-        <select class="form-select" id="e-pago">
-          <option value="Bien">Bien</option>
-          <option value="Medio">Medio</option>
-          <option value="Mal">Mal</option>
-        </select>
-      </div>
+    <div class="fg"><label class="fl">Nombre</label><input class="fi" id="e-nom"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Zona</label><select class="fs" id="e-zona"><option value="Norte">Norte</option><option value="Oeste">Oeste</option><option value="Sudeste">Sudeste</option></select></div>
+      <div class="fg"><label class="fl">Cómo paga</label><select class="fs" id="e-pago"><option>Bien</option><option>Medio</option><option>Mal</option></select></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Monto</label><input class="form-input" id="e-monto"></div>
-      <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" id="e-fecha" type="date"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Monto</label><input class="fi" id="e-monto"></div>
+      <div class="fg"><label class="fl">Fecha fin</label><input class="fi" id="e-fecha" type="date"></div>
     </div>
-    <div class="form-group"><label class="form-label">Última vez que trabajó</label><input class="form-input" id="e-ultima"></div>
-    <div class="form-group"><label class="form-label">Observaciones</label><input class="form-input" id="e-obs"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Cuotas atrasadas</label><input class="form-input" id="e-cuotas" type="number" min="0" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">Monto adeudado</label><input class="form-input" id="e-deuda" placeholder="$0"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Cuotas atrasadas</label><input class="fi" id="e-cuotas" type="number" min="0"></div>
+      <div class="fg"><label class="fl">Monto adeudado</label><input class="fi" id="e-deuda"></div>
     </div>
-    <button class="form-btn" onclick="guardarEdicion()">Guardar cambios</button>
+    <div class="fg"><label class="fl">Última actividad</label><input class="fi" id="e-ultima"></div>
+    <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="e-obs"></div>
+    <button class="fbtn" onclick="guardarEdicion()">Guardar cambios</button>
   </div>
 </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// ── CONFIG FIREBASE ─────────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyBCDVn_r-n0ZpHw9W8m_iOOafzYTLjv1MQ",
-  authDomain: "grupo-colman.firebaseapp.com",
-  databaseURL: "https://grupo-colman-default-rtdb.firebaseio.com",
-  projectId: "grupo-colman",
-  storageBucket: "grupo-colman.firebasestorage.app",
-  messagingSenderId: "831696315180",
-  appId: "1:831696315180:web:887b810de22f2d23684289"
-};
+// ══ FIREBASE — SIN LOGIN ═══════════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:"AIzaSyBCDVn_r-n0ZpHw9W8m_iOOafzYTLjv1MQ",
+  databaseURL:"https://grupo-colman-default-rtdb.firebaseio.com",
+  projectId:"grupo-colman"
+});
+const db = firebase.database();
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db   = firebase.database();
+// ══ ESTADO ════════════════════════════════════════════════════════════════
+let clientes={}, atrasados={}, tabActual="alertas", filtroDeuda="todos", editKey=null, editTipo=null;
 
-let DB_URL  = "https://grupo-colman-default-rtdb.firebaseio.com";
-let API_KEY = "AIzaSyBCDVn_r-n0ZpHw9W8m_iOOafzYTLjv1MQ";
-let clientes = {};
+// ══ UTILIDADES ══════════════════════════════════════════════════════════════
+const hoy=new Date();hoy.setHours(0,0,0,0);
+function dvencer(f){if(!f)return null;const d=new Date(f);d.setHours(0,0,0,0);return Math.round((d-hoy)/86400000)}
+function ffecha(f){if(!f)return"—";const[y,m,d]=f.split("-");return`${d}/${m}/${y}`}
+function semaf(c){const n=parseInt(c)||0;if(n<=0)return null;if(n<=2)return{cls:"dc-a",card:"sam-a",ico:"🟡",lbl:`${n} cuota${n>1?"s":""} atrasada${n>1?"s":""}`,g:1};if(n<=4)return{cls:"dc-n",card:"sam-n",ico:"🟠",lbl:`${n} cuotas atrasadas`,g:2};return{cls:"dc-r",card:"sam-r",ico:"🔴",lbl:`${n} cuotas atrasadas`,g:3}}
+function bpago(p){if(p==="Bien")return"b-bien";if(p==="Medio")return"b-medio";return"b-mal"}
+function vcls(d){if(d===null)return"b-vigente";if(d<0)return"b-vencido";if(d<=30)return"b-vence";return"b-vigente"}
+function vlbl(d){if(d===null)return"Sin fecha";if(d<0)return"Vencido";if(d<=30)return`Vence en ${d}d`;return`${d} días`}
 
-function guardarConfig() {
-  mostrar("pantalla-login");
-}
+// MENSAJES
+function mgRen(c){const d=dvencer(c.fecha),f=ffecha(c.fecha);if(d===null)return`📋 ${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago} | Monto: ${c.monto||"—"}\n\n⚠️ Sin fecha de finalización. Actualizar para gestionar renovación.`;if(d<0)return`⚠️ CRÉDITO VENCIDO\n\n${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago}\nMonto: ${c.monto||"—"} | Venció: ${f} (hace ${Math.abs(d)} días)\n\n👉 Contactar urgente para renovación.`;if(d<=30)return`🔔 RENOVACIÓN URGENTE\n\n${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago}\nMonto: ${c.monto||"—"} | Vence: ${f} (en ${d} días)\n\n✅ Contactar esta semana para ofrecer renovación.`;if(d<=60)return`📅 Próximo a vencer\n\n${c.nombre} | Monto: ${c.monto||"—"}\nFinaliza: ${f} (en ${d} días)\n\nAgendar visita para ofrecerle renovación.`;return`✅ Vigente — ${c.nombre}\nMonto: ${c.monto||"—"} | Finaliza: ${f} (en ${d} días)`}
+function mcRen(c){const d=dvencer(c.fecha),f=ffecha(c.fecha);const n=c.nombre.split(" ").pop();if(!d||d>60)return`Hola ${n}! 👋 Te saluda Colman Equipamientos.\n\nTenés disponible la posibilidad de renovar o tomar un nuevo crédito con nosotros.\n\nTenemos equipos de hogar y comerciales con financiación cómoda. 🛒\n\n¿Te interesa que pasemos a visitarte?`;if(d<0)return`Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nTu crédito venció el ${f}. Tenemos una propuesta especial de renovación para vos.\n\nUn gestor va a pasar a visitarte. 😊`;if(d<=30)return`Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nTu crédito finaliza el ${f} — te quedan ${d} días.\n\n🎉 Tenés una oferta especial de renovación:\n• Nuevos montos disponibles\n• Cuotas a tu medida\n• Sin trámites complicados\n\nUn gestor pasa a visitarte esta semana. 💪`;return`Hola ${n}! 👋 Te saluda Colman Equipamientos.\n\nTu crédito finaliza el ${f} (en ${d} días).\n\nYa podemos preparar tu renovación. Tenemos muy buenas opciones. 😊\n\nEn los próximos días pasa un gestor a visitarte.`}
+function mgDeu(c){const s=semaf(c.cuotas);if(!s)return"";if(s.g===1)return`🟡 ATRASO LEVE\n\n${c.nombre}\nZona: ${c.zona} | Cuotas: ${c.cuotas}\nDeuda: ${c.deuda||"no registrado"}\n\nContactar para acordar pago.`;if(s.g===2)return`🟠 ATRASO IMPORTANTE\n\n${c.nombre}\nZona: ${c.zona} | Cuotas: ${c.cuotas}\nDeuda: ${c.deuda||"no registrado"}\n\nVisitar urgente. Ofrecer plan de pago.`;return`🔴 DEUDA CRÍTICA\n\n${c.nombre}\nZona: ${c.zona} | Cuotas: ${c.cuotas}\nDeuda: ${c.deuda||"no registrado"}\n\n⚠️ Gestión urgente. Escalar si no responde.`}
+function mcDeu(c){const s=semaf(c.cuotas);if(!s)return"";const n=c.nombre.split(" ").pop();if(s.g===1)return`Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nNotamos que tenés ${c.cuotas} cuota${c.cuotas>1?"s":""} pendiente${c.cuotas>1?"s":""}.\n\nPasamos a visitarte para ponerte al día. 😊`;if(s.g===2)return`Hola ${n}! Te contactamos de Colman Equipamientos.\n\nRegistramos ${c.cuotas} cuotas impagas.\n\nEs importante regularizar. Un gestor va a visitarte. 🤝`;return`Hola ${n}, te contactamos de Colman Equipamientos.\n\nRegistramos una deuda de ${c.cuotas} cuotas sin regularizar.\n\n⚠️ Un gestor va a visitarte a la brevedad.`}
 
-// ── AUTH con Firebase SDK ──────────────────────────────────────────────────
-async function iniciarSesion() {
-  const email = document.getElementById("l-email").value.trim();
-  const pass  = document.getElementById("l-pass").value;
-  const btn   = document.getElementById("l-btn");
-  const err   = document.getElementById("l-err");
-  err.style.display = "none";
-  btn.disabled = true; btn.textContent = "Ingresando...";
-  try {
-    await auth.signInWithEmailAndPassword(email, pass);
-    cargarApp();
-  } catch(e) {
-    const msg = e.code;
-    err.textContent = (msg === "auth/wrong-password" || msg === "auth/user-not-found" || msg === "auth/invalid-credential")
-      ? "⚠️ Email o contraseña incorrectos."
-      : "⚠️ Error al ingresar. Verificá tu conexión.";
-    err.style.display = "block";
-    btn.disabled = false; btn.textContent = "Ingresar";
-  }
-}
+function copiar(txt,btnId){navigator.clipboard.writeText(txt).catch(()=>{const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t)});const b=document.getElementById(btnId);if(b){const o=b.textContent;b.textContent="✅ Copiado!";setTimeout(()=>b.textContent=o,2000)}}
 
-function cerrarSesion() {
-  if (!confirm("¿Cerrar sesión?")) return;
-  auth.signOut();
-  mostrar("pantalla-login");
-  document.getElementById("l-email").value = "";
-  document.getElementById("l-pass").value = "";
-  document.getElementById("l-btn").disabled = false;
-  document.getElementById("l-btn").textContent = "Ingresar";
-}
-
-// ── API Firebase SDK (funciona desde file:// y https://) ───────────────────
-async function fbGet(path) {
-  const snap = await db.ref(path).once("value");
-  return snap.val();
-}
-async function fbPush(path, data) {
-  setSyncing(true);
-  const ref = await db.ref(path).push(data);
-  setSyncing(false);
-  return { name: ref.key };
-}
-async function fbPut(path, data) {
-  setSyncing(true);
-  await db.ref(path).set(data);
-  setSyncing(false);
-}
-async function fbDelete(path) {
-  setSyncing(true);
-  await db.ref(path).remove();
-  setSyncing(false);
-}
-
-function setSyncing(s) {
-  document.getElementById("sync-dot")?.classList.toggle("syncing", s);
-}
-
-// ── DATOS INICIALES ────────────────────────────────────────────────────────
-const datosIniciales = [
-  {nombre:"Figueroa Hernan Agustin",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$445.180",fecha:"2027-03-01",obs:""},
-  {nombre:"Vargas Marcela Noemi",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$1.212.950 / $914.034",fecha:"2026-06-27",obs:"Dos créditos"},
-  {nombre:"Chavez Juan Manuel",zona:"Zona Norte",pago:"Mal",ultima:"",monto:"$300.000",fecha:"",obs:"Está atrasado CrediColman"},
-  {nombre:"Maita Veronica Lorena",zona:"Zona Norte",pago:"Medio",ultima:"",monto:"$200.000",fecha:"",obs:""},
-  {nombre:"Mendez Omar Aritides",zona:"Zona Norte",pago:"Bien",ultima:"",monto:"$343.442",fecha:"",obs:""},
-  {nombre:"Saavedra Adriana",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$200.000",fecha:"2026-10-18",obs:""},
-  {nombre:"Cañizares Dario Ruben",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$600.000",fecha:"2026-10-07",obs:""},
-  {nombre:"Vazquez Jaqueline Gloria",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$150.000",fecha:"2026-09-27",obs:""},
-  {nombre:"Renfiges Jose Jonatan",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$2.796.730",fecha:"2026-12-03",obs:""},
-  {nombre:"Agustina Liliana Quipildor",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$82.598",fecha:"2026-10-20",obs:""},
-  {nombre:"Jurado Carlos Modesto",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$900.000",fecha:"2026-10-07",obs:""},
-  {nombre:"Huanca Lidia",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$1.161.000",fecha:"2026-09-27",obs:""},
-  {nombre:"Cutipa Francisco",zona:"Zona Norte",pago:"Mal",ultima:"",monto:"$800.000",fecha:"",obs:""},
-  {nombre:"Vera Adrian Ezequiel",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$200.000",fecha:"2026-09-23",obs:""},
-  {nombre:"Garcia Mirta Estela",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$800.000 / $1.000.000",fecha:"2026-06-11",obs:"3 créditos"},
-  {nombre:"Zuleydi Mercado Suarez",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$600.000",fecha:"2026-09-23",obs:""},
-  {nombre:"Aparicio Nelida",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$500.000",fecha:"2026-11-07",obs:""},
-  {nombre:"Centeno Maria Eugenia",zona:"Zona Norte",pago:"Mal",ultima:"Actualmente",monto:"$150.000 / $970.533 / $200.000",fecha:"2026-06-27",obs:"3 créditos"},
-  {nombre:"Saracho Eduardo Alejandro",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$1.000.000",fecha:"2026-09-30",obs:""},
-  {nombre:"Martinez Luisa Elena",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$1.000.000",fecha:"2026-10-06",obs:""},
-  {nombre:"Espinosa Maria Cristina",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$2.000.000",fecha:"2026-10-18",obs:""},
-  {nombre:"Gutierrez Rebeca Beatriz",zona:"Zona Norte",pago:"Bien",ultima:"Actualmente",monto:"$300.000",fecha:"2027-03-04",obs:""},
-  {nombre:"Ortega Carina Mabel",zona:"Zona Oeste",pago:"Bien",ultima:"Actualmente",monto:"$500.000",fecha:"2026-09-11",obs:""},
-  {nombre:"Jorge Jaqueline Melisa",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$700.000",fecha:"2026-10-07",obs:""},
-  {nombre:"Lamas Alicia Milagro",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$500.000",fecha:"2026-10-05",obs:""},
-  {nombre:"Vilte Maria De Los Angeles",zona:"Zona Oeste",pago:"Mal",ultima:"",monto:"$1.145.850",fecha:"",obs:"Paga mal"},
-  {nombre:"Mamani Erika Yanina",zona:"Zona Oeste",pago:"Bien",ultima:"Actualmente",monto:"$800.000 / $300.000",fecha:"2026-06-27",obs:"Dos créditos"},
-  {nombre:"Alvarado Diego Armando",zona:"Zona Oeste",pago:"Mal",ultima:"Actualmente",monto:"$300.000",fecha:"2026-10-06",obs:""},
-  {nombre:"Cleofe Torrez",zona:"Zona Oeste",pago:"Mal",ultima:"",monto:"$500.000",fecha:"",obs:""},
-  {nombre:"Portal Ortiz Claudia Susana",zona:"Zona Oeste",pago:"Bien",ultima:"Actualmente",monto:"$500.000",fecha:"2026-09-27",obs:""},
-  {nombre:"Velasquez Francisco Rolando",zona:"Zona Oeste",pago:"Mal",ultima:"Actualmente",monto:"$300.000",fecha:"2026-10-07",obs:""},
-  {nombre:"Chavarria Diego Ariel",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$300.000 / $1.550.000",fecha:"2026-06-18",obs:""},
-  {nombre:"Monetengro Maximiliano Alejandro",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$300.000",fecha:"2026-10-04",obs:""},
-  {nombre:"Coope Mariano Franco",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$247.903 / $837.962",fecha:"2026-06-27",obs:""},
-  {nombre:"Casimiro Constanza Belen",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$1.586.660",fecha:"2027-01-23",obs:""},
-  {nombre:"Pastrana Miguel Angel",zona:"Zona Sudeste",pago:"Mal",ultima:"Actualmente",monto:"$551.000",fecha:"",obs:""},
-  {nombre:"Condori Lidia Analia",zona:"Zona Sudeste",pago:"Medio",ultima:"",monto:"$700.000",fecha:"",obs:""},
-  {nombre:"Fontañez Andrea",zona:"Zona Sudeste",pago:"Mal",ultima:"Actualmente",monto:"$150.000",fecha:"2026-12-08",obs:""},
-  {nombre:"Aguilera Rogelio",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$975.000",fecha:"2026-12-01",obs:""},
-  {nombre:"Coria Pamela Alejandra",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$770.061",fecha:"2026-10-05",obs:""},
-  {nombre:"Beeche Isaias Alexander",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$300.004",fecha:"2026-10-23",obs:""},
-  {nombre:"Leal Cynthia Daniela",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$400.000 / $567.264",fecha:"2026-06-16",obs:""},
-  {nombre:"Zulema Esteban Mabel",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$800.000",fecha:"2026-10-28",obs:""},
-  {nombre:"Navarro Ana Maria",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$500.000",fecha:"2026-10-04",obs:""},
-  {nombre:"Caceres Maria Andrea",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$500.000",fecha:"2026-09-29",obs:""},
-  {nombre:"Castillo Modesta Carina",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$500.000",fecha:"2026-09-27",obs:""},
-  {nombre:"Ovando Amalia Isabela",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$200.000",fecha:"2026-09-27",obs:""},
-  {nombre:"Villagran Paola Elizabeth",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$300.000",fecha:"2026-11-16",obs:""},
-  {nombre:"Amaya Fernanda Daniela",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$300.000",fecha:"2026-09-29",obs:""},
-  {nombre:"Perez Maria Ines",zona:"Zona Sudeste",pago:"Bien",ultima:"Actualmente",monto:"$200.000",fecha:"2026-10-06",obs:""},
-];
-
-// ── CARGAR APP ─────────────────────────────────────────────────────────────
-async function cargarApp() {
-  mostrar("pantalla-loading");
-  document.getElementById("loading-msg").textContent = "Cargando clientes...";
-  try {
-    let data = await fbGet("clientes");
-    if (!data) {
-      document.getElementById("loading-msg").textContent = "Primera vez: cargando datos...";
-      for (const c of datosIniciales) await fbPush("clientes", c);
-      data = await fbGet("clientes");
-    }
-    clientes = data || {};
-    // Cargar atrasados en subcolección separada
-    await cargarAtrasadosIniciales();
-    const dataAt = await fbGet("atrasados");
-    if (dataAt) {
-      // Mezclar atrasados con clientes para el módulo de deudas
-      Object.entries(dataAt).forEach(([k,v]) => {
-        if (!clientes[k]) clientes[k] = {...v, _esAtrasado: true};
-      });
-    }
-    mostrar(null);
-    setFecha();
-    renderAlertas();
-    iniciarPolling();
-  } catch(e) {
-    document.getElementById("loading-msg").textContent = "❌ Error de conexión.";
-    setTimeout(() => { mostrar("pantalla-login"); }, 2000);
-  }
-}
-
-// ── CARGA INICIAL DE ATRASADOS ─────────────────────────────────────────────
-const atrasadosIniciales = [
-  {nombre:"Carrasco Claudio Adrian",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$635.430",fecha:"",obs:"Cuota: 10/10 | Vencido hace 66 días",cuotas:"3",deuda:"$635.430"},
-  {nombre:"Duran Maria Fernanda",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$559.008",fecha:"",obs:"Cuota: 12/12 | Vencido hace 399 días",cuotas:"10",deuda:"$559.008"},
-  {nombre:"Sacarias Juan Carlos",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$412.250",fecha:"",obs:"Cuota: 6/6 | Vencido hace 690 días",cuotas:"10",deuda:"$412.250"},
-  {nombre:"Guaymas Melisa Roxana",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$131.780",fecha:"",obs:"Cuota: 20/20 | Vencido hace 550 días",cuotas:"10",deuda:"$131.780"},
-  {nombre:"Castillo Lucas Emanuel",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$766.010",fecha:"",obs:"Cuota: 35/35 | Vencido hace 312 días",cuotas:"7",deuda:"$766.010"},
-  {nombre:"Romero Liliana",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$592.490",fecha:"",obs:"Cuota: 10/10 | Vencido hace 413 días",cuotas:"10",deuda:"$592.490"},
-  {nombre:"Vargas Ricardo Amado",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$706.600",fecha:"",obs:"Cuota: 15/15 | Vencido hace 421 días",cuotas:"10",deuda:"$706.600"},
-  {nombre:"Torrez Mamani Rosa",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$503.450",fecha:"",obs:"Cuota: 10/10 | Vencido hace 502 días",cuotas:"10",deuda:"$503.450"},
-  {nombre:"Castro Alexandra Nieves",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$150.237",fecha:"",obs:"Cuota: 3/3 | Vencido hace 768 días",cuotas:"10",deuda:"$150.237"},
-  {nombre:"Castrillo Paola Andrea",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$195.740",fecha:"",obs:"Cuota: 15/15 | Vencido hace 112 días",cuotas:"5",deuda:"$195.740"},
-  {nombre:"Herrera Lopez Andrea",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$156.200",fecha:"",obs:"Cuota: 12/12 | Vencido hace 431 días",cuotas:"10",deuda:"$156.200"},
-  {nombre:"Bermudez Norma",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$525.000",fecha:"",obs:"Cuota: 12/12 | Vencido hace 430 días",cuotas:"10",deuda:"$525.000"},
-  {nombre:"Cardozo Julio Cesar",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$502.000",fecha:"",obs:"Cuota: 12/12 | Vencido hace 381 días",cuotas:"10",deuda:"$502.000"},
-  {nombre:"Alvarado Diego Armando",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$56.000",fecha:"",obs:"Cuota: 12/12 | Vencido hace 204 días",cuotas:"7",deuda:"$56.000"},
-  {nombre:"Perron Betina Lorena",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$31.135",fecha:"",obs:"Cuota: 10/10 | Vencido hace 75 días",cuotas:"3",deuda:"$31.135"},
-  {nombre:"Mendez Maria Angelica",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$376.990",fecha:"",obs:"Cuota: 30/30 | Vencido hace 430 días",cuotas:"10",deuda:"$376.990"},
-  {nombre:"Lopez Alba Lucrecia",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$583.420",fecha:"",obs:"Cuota: 20/20 | Vencido hace 442 días",cuotas:"10",deuda:"$583.420"},
-  {nombre:"Diaz Dina Delia",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$566.460",fecha:"",obs:"Cuota: 30/30 | Vencido hace 248 días",cuotas:"7",deuda:"$566.460"},
-  {nombre:"Vargas Rocio del Milagro",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$190.680",fecha:"",obs:"Cuota: 30/30 | Vencido hace 244 días",cuotas:"7",deuda:"$190.680"},
-  {nombre:"Alejo Aylen Paula",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$168.906",fecha:"",obs:"Cuota: 12/12 | Vencido hace 706 días",cuotas:"10",deuda:"$168.906"},
-  {nombre:"Torrejon Leonardo Manuel",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$75.200",fecha:"",obs:"Cuota: 60/60 | Vencido hace 84 días",cuotas:"3",deuda:"$75.200"},
-  {nombre:"Mapelliz Judith Gabriela",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$170.945",fecha:"",obs:"Cuota: 15/15 | Vencido hace 1249 días",cuotas:"10",deuda:"$170.945"},
-  {nombre:"Erman Lucas Emanuel",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$205.649",fecha:"",obs:"Cuota: 53/53 | Vencido hace 87 días",cuotas:"3",deuda:"$205.649"},
-  {nombre:"Centeno Maria Eugenia",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$14.917",fecha:"",obs:"Cuota: 21/21 | Vencido hace 35 días",cuotas:"3",deuda:"$14.917"},
-  {nombre:"Arroyo Orue Yesica",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$252.329",fecha:"",obs:"Cuota: 60/60 | Vencido hace 526 días",cuotas:"10",deuda:"$252.329"},
-  {nombre:"Velasquez Rolando Francisco",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$175.950",fecha:"",obs:"Cuota: 53/53 | Vencido hace 70 días",cuotas:"3",deuda:"$175.950"},
-  {nombre:"Yanez Allende Ana Cecilia",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$27.600",fecha:"",obs:"Cuota: 10/10 | Vencido hace 645 días",cuotas:"10",deuda:"$27.600"},
-  {nombre:"Mirta Varela",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$56.920",fecha:"",obs:"Cuota: 210/210 | Vencido hace 250 días",cuotas:"7",deuda:"$56.920"},
-  {nombre:"Encina Camila",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$190.303",fecha:"",obs:"Cuota: 37/37 | Vencido hace 386 días",cuotas:"10",deuda:"$190.303"},
-  {nombre:"Rollano Manriquez Leddy",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$197.104",fecha:"",obs:"Cuota: 15/120 | Vencido hace sin datos",cuotas:"105",deuda:"$197.104"},
-  {nombre:"Lamas Alicia Milagro",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$100.247",fecha:"",obs:"Cuota: 18/21 | Vencido hace sin datos",cuotas:"3",deuda:"$100.247"},
-  {nombre:"Pineda Ana Beatriz",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$42.084",fecha:"",obs:"Cuota: 29/120 | Vencido hace sin datos",cuotas:"91",deuda:"$42.084"},
-  {nombre:"Saracho Rosita",zona:"Zona Oeste",pago:"Medio",ultima:"Actualmente",monto:"$17.736",fecha:"",obs:"Cuota: 83/120 | Vencido hace sin datos",cuotas:"37",deuda:"$17.736"},
-  {nombre:"Condori Norma Beatriz",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$404.000",fecha:"",obs:"Cuota: 4/4 | Vencido hace 453 días",cuotas:"10",deuda:"$404.000"},
-  {nombre:"Orozco Grecia",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$754.756",fecha:"",obs:"Cuota: 6/6 | Vencido hace 659 días",cuotas:"10",deuda:"$754.756"},
-  {nombre:"Di Pauli Debora Ximena",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$201.090",fecha:"",obs:"Cuota: 10/10 | Vencido hace 259 días",cuotas:"7",deuda:"$201.090"},
-  {nombre:"Olarte Valeria Romina",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$875.408",fecha:"",obs:"Cuota: 12/12 | Vencido hace 491 días",cuotas:"10",deuda:"$875.408"},
-  {nombre:"Rios Sandra Magdalena",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$395.008",fecha:"",obs:"Cuota: 12/12 | Vencido hace 87 días",cuotas:"3",deuda:"$395.008"},
-  {nombre:"Velasquez Marina Romina",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$622.500",fecha:"",obs:"Cuota: 15/15 | Vencido hace 438 días",cuotas:"10",deuda:"$622.500"},
-  {nombre:"Gonzalez Monica Lorena",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$393.790",fecha:"",obs:"Cuota: 10/10 | Vencido hace 488 días",cuotas:"10",deuda:"$393.790"},
-  {nombre:"Pastrana Miguel Angel",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$505.060",fecha:"",obs:"Cuota: 10/10 | Vencido hace 294 días",cuotas:"7",deuda:"$505.060"},
-  {nombre:"Coronel Jesus Miguel",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$759.972",fecha:"",obs:"Cuota: 12/12 | Vencido hace 497 días",cuotas:"10",deuda:"$759.972"},
-  {nombre:"Sanchez Paola Alejandra",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$230.368",fecha:"",obs:"Cuota: 15/15 | Vencido hace 697 días",cuotas:"10",deuda:"$230.368"},
-  {nombre:"Barrionuevo Silvia Susana",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$540.400",fecha:"",obs:"Cuota: 10/10 | Vencido hace 325 días",cuotas:"7",deuda:"$540.400"},
-  {nombre:"Coronel Juan Carlos",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$468.530",fecha:"",obs:"Cuota: 10/10 | Vencido hace 783 días",cuotas:"10",deuda:"$468.530"},
-  {nombre:"Cejas Andrea Edith",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$359.000",fecha:"",obs:"Cuota: 12/12 | Vencido hace 356 días",cuotas:"7",deuda:"$359.000"},
-  {nombre:"Fontañez Andrea",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$110.925",fecha:"",obs:"Cuota: 6/6 | Vencido hace 108 días",cuotas:"5",deuda:"$110.925"},
-  {nombre:"Barboza Graciela Soledad",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$285.740",fecha:"",obs:"Cuota: 10/10 | Vencido hace 480 días",cuotas:"10",deuda:"$285.740"},
-  {nombre:"Domingo Juan Jesus",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$531.145",fecha:"",obs:"Cuota: 15/15 | Vencido hace 650 días",cuotas:"10",deuda:"$531.145"},
-  {nombre:"Avila Monica Carolina",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$500.255",fecha:"",obs:"Cuota: 15/15 | Vencido hace 423 días",cuotas:"10",deuda:"$500.255"},
-  {nombre:"Maisares Diego Federico",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$729.910",fecha:"",obs:"Cuota: 30/30 | Vencido hace 489 días",cuotas:"10",deuda:"$729.910"},
-  {nombre:"Gonzales Gallardo Juan",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$110.590",fecha:"",obs:"Cuota: 25/25 | Vencido hace 399 días",cuotas:"10",deuda:"$110.590"},
-  {nombre:"Cruz Mirta Elizabeth",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$269.279",fecha:"",obs:"Cuota: 14/14 | Vencido hace 538 días",cuotas:"10",deuda:"$269.279"},
-  {nombre:"Suarez Elizabeth Felisa",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$289.360",fecha:"",obs:"Cuota: 30/30 | Vencido hace 713 días",cuotas:"10",deuda:"$289.360"},
-  {nombre:"Villa Gabriela Rosana",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$103.187",fecha:"",obs:"Cuota: 10/10 | Vencido hace 530 días",cuotas:"10",deuda:"$103.187"},
-  {nombre:"Vargas Nora del Carmen",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$419.920",fecha:"",obs:"Cuota: 210/210 | Vencido hace 318 días",cuotas:"7",deuda:"$419.920"},
-  {nombre:"Gomez Jorgelina Anahi",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$135.190",fecha:"",obs:"Cuota: 120/120 | Vencido hace 332 días",cuotas:"7",deuda:"$135.190"},
-  {nombre:"Menghini Ariel Gustavo",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$1.312.090",fecha:"",obs:"Cuota: 210/210 | Vencido hace 437 días",cuotas:"10",deuda:"$1.312.090"},
-  {nombre:"Gutierrez Beatriz Mercedes",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$38.610",fecha:"",obs:"Cuota: 10/10 | Vencido hace 452 días",cuotas:"10",deuda:"$38.610"},
-  {nombre:"Herrera Daiana Micaela",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$546.060",fecha:"",obs:"Cuota: 210/210 | Vencido hace 265 días",cuotas:"7",deuda:"$546.060"},
-  {nombre:"Enriquez Natalia Monica",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$41.400",fecha:"",obs:"Cuota: 75/75 | Vencido hace 258 días",cuotas:"7",deuda:"$41.400"},
-  {nombre:"Sanchez Guadalupe del Ros.",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$330.962",fecha:"",obs:"Cuota: 90/90 | Vencido hace 540 días",cuotas:"10",deuda:"$330.962"},
-  {nombre:"Tolaba Dario Ezequiel",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$436.810",fecha:"",obs:"Cuota: 90/90 | Vencido hace 441 días",cuotas:"10",deuda:"$436.810"},
-  {nombre:"Gutierrez Patricia",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$256.660",fecha:"",obs:"Cuota: 60/60 | Vencido hace 411 días",cuotas:"10",deuda:"$256.660"},
-  {nombre:"Flores Fernanda",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$575.390",fecha:"",obs:"Cuota: 150/150 | Vencido hace 269 días",cuotas:"7",deuda:"$575.390"},
-  {nombre:"Delgado Rosa Dalila Janet",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$103.410",fecha:"",obs:"Cuota: 210/210 | Vencido hace 509 días",cuotas:"10",deuda:"$103.410"},
-  {nombre:"Lopez Matias Alejandro",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$265.602",fecha:"",obs:"Cuota: 146/146 | Vencido hace 708 días",cuotas:"10",deuda:"$265.602"},
-  {nombre:"Albornoz Marcelo Gerardo",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$119.200",fecha:"",obs:"Cuota: 53/53 | Vencido hace 773 días",cuotas:"10",deuda:"$119.200"},
-  {nombre:"Mamani Patricia",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$257.688",fecha:"",obs:"Cuota: 9/15 | Vencido hace sin datos",cuotas:"6",deuda:"$257.688"},
-  {nombre:"Castillo Modesta Carina",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$138.219",fecha:"",obs:"Cuota: 10/21 | Vencido hace sin datos",cuotas:"11",deuda:"$138.219"},
-  {nombre:"Caseres Carina Andrea",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$60.837",fecha:"",obs:"Cuota: 8/21 | Vencido hace sin datos",cuotas:"13",deuda:"$60.837"},
-  {nombre:"Casula Angelica Rosana",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$49.085",fecha:"",obs:"Cuota: 16/120 | Vencido hace sin datos",cuotas:"104",deuda:"$49.085"},
-  {nombre:"Tolaba Mariela",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$24.142",fecha:"",obs:"Cuota: 13/90 | Vencido hace sin datos",cuotas:"77",deuda:"$24.142"},
-  {nombre:"Nieva Alejandro Albano",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$20.747",fecha:"",obs:"Cuota: 130/210 | Vencido hace sin datos",cuotas:"80",deuda:"$20.747"},
-  {nombre:"Mendoza Fany",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$64.308",fecha:"",obs:"Cuota: 51/90 | Vencido hace sin datos",cuotas:"39",deuda:"$64.308"},
-  {nombre:"Aguilera Rogelio",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$157.515",fecha:"",obs:"Cuota: 16/60 | Vencido hace sin datos",cuotas:"44",deuda:"$157.515"},
-  {nombre:"Gonza Claudia Ramona",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$18.715",fecha:"",obs:"Cuota: 8/21 | Vencido hace sin datos",cuotas:"13",deuda:"$18.715"},
-  {nombre:"Sanabria Veronica",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$44.126",fecha:"",obs:"Cuota: 163/210 | Vencido hace sin datos",cuotas:"47",deuda:"$44.126"},
-  {nombre:"Casimiro Constanza Belen",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$14.760",fecha:"",obs:"Cuota: 134/210 | Vencido hace sin datos",cuotas:"76",deuda:"$14.760"},
-  {nombre:"Pantoja Rodrigo Jose",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$13.580",fecha:"",obs:"Cuota: 21/120 | Vencido hace sin datos",cuotas:"99",deuda:"$13.580"},
-  {nombre:"Moyano Luana Celeste",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$139.668",fecha:"",obs:"Cuota: 195/210 | Vencido hace sin datos",cuotas:"15",deuda:"$139.668"},
-  {nombre:"Cunchila Ricardo Javier",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$164.592",fecha:"",obs:"Cuota: 185/210 | Vencido hace sin datos",cuotas:"25",deuda:"$164.592"},
-  {nombre:"Caballero Pablo Ismael",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$241.240",fecha:"",obs:"Cuota: 41/60 | Vencido hace sin datos",cuotas:"19",deuda:"$241.240"},
-  {nombre:"Caseres Carina Andrea 2",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$211.334",fecha:"",obs:"Cuota: 14/15 | Vencido hace sin datos",cuotas:"1",deuda:"$211.334"},
-  {nombre:"Burgos Dario Hernan",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$103.910",fecha:"",obs:"Cuota: 6/15 | Vencido hace sin datos",cuotas:"9",deuda:"$103.910"},
-  {nombre:"Sanchez Teresa Andrea",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$85.778",fecha:"",obs:"Cuota: 3/25 | Vencido hace sin datos",cuotas:"22",deuda:"$85.778"},
-  {nombre:"Coope Franco",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$68.158",fecha:"",obs:"Cuota: 14/15 | Vencido hace sin datos",cuotas:"1",deuda:"$68.158"},
-  {nombre:"Soria Jimena Cecilia",zona:"Zona Sudeste",pago:"Medio",ultima:"Actualmente",monto:"$35.218",fecha:"",obs:"Cuota: 14/20 | Vencido hace sin datos",cuotas:"6",deuda:"$35.218"},
-  {nombre:"Cutipa Nelly Milagro",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$2.290.000",fecha:"",obs:"Cuota: 12/12 | Vencido hace 279 días",cuotas:"7",deuda:"$2.290.000"},
-  {nombre:"Aparicio Ileana",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$1.192.000",fecha:"",obs:"Cuota: 38/38 | Vencido hace 285 días",cuotas:"7",deuda:"$1.192.000"},
-  {nombre:"Cutipa Francisco",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$984.008",fecha:"",obs:"Cuota: 12/12 | Vencido hace 257 días",cuotas:"7",deuda:"$984.008"},
-  {nombre:"Rojo Adet Ricardo",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$1.543.430",fecha:"",obs:"Cuota: 30/30 | Vencido hace 372 días",cuotas:"10",deuda:"$1.543.430"},
-  {nombre:"Peñalva Cesar Fernando",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$715.008",fecha:"",obs:"Cuota: 12/12 | Vencido hace 315 días",cuotas:"7",deuda:"$715.008"},
-  {nombre:"Chocobar Natalia Fabiana",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$468.535",fecha:"",obs:"Cuota: 15/15 | Vencido hace 531 días",cuotas:"10",deuda:"$468.535"},
-  {nombre:"Herrera Samanta Alejandra",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$4",fecha:"",obs:"Cuota: 72/72 | Vencido hace 96 días",cuotas:"5",deuda:"$4"},
-  {nombre:"Gonzalez Monica Susana",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$354.210",fecha:"",obs:"Cuota: 15/15 | Vencido hace 361 días",cuotas:"7",deuda:"$354.210"},
-  {nombre:"Dana Melani Loreley",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$636.289",fecha:"",obs:"Cuota: 21/21 | Vencido hace 68 días",cuotas:"3",deuda:"$636.289"},
-  {nombre:"Lopez Monrroy Claudia",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$143.890",fecha:"",obs:"Cuota: 5/5 | Vencido hace 857 días",cuotas:"10",deuda:"$143.890"},
-  {nombre:"Guanca Juan Roberto",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$105.008",fecha:"",obs:"Cuota: 12/12 | Vencido hace 119 días",cuotas:"5",deuda:"$105.008"},
-  {nombre:"Mercado Federico Cornelio",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$154.500",fecha:"",obs:"Cuota: 12/12 | Vencido hace 409 días",cuotas:"10",deuda:"$154.500"},
-  {nombre:"Mendoza Alex Ezequiel",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$116.765",fecha:"",obs:"Cuota: 6/6 | Vencido hace 649 días",cuotas:"10",deuda:"$116.765"},
-  {nombre:"Briseño Gladis Violeta",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$210.170",fecha:"",obs:"Cuota: 10/10 | Vencido hace 661 días",cuotas:"10",deuda:"$210.170"},
-  {nombre:"Krivoshen Maximiliano",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$1.655.190",fecha:"",obs:"Cuota: 210/210 | Vencido hace 349 días",cuotas:"7",deuda:"$1.655.190"},
-  {nombre:"Hessling Virginia Gisel",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$1.704.800",fecha:"",obs:"Cuota: 210/210 | Vencido hace 349 días",cuotas:"7",deuda:"$1.704.800"},
-  {nombre:"Cancino Santiago Alfredo",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$107.738",fecha:"",obs:"Cuota: 37/37 | Vencido hace 52 días",cuotas:"3",deuda:"$107.738"},
-  {nombre:"Navarro Magdalena Beatriz",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$133.477",fecha:"",obs:"Cuota: 7/7 | Vencido hace 1341 días",cuotas:"10",deuda:"$133.477"},
-  {nombre:"Amaya Carolina Del Valle",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$163.502",fecha:"",obs:"Cuota: 12/12 | Vencido hace 403 días",cuotas:"10",deuda:"$163.502"},
-  {nombre:"Lozano Jorge Alfredo",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$84.640",fecha:"",obs:"Cuota: 20/20 | Vencido hace 1348 días",cuotas:"10",deuda:"$84.640"},
-  {nombre:"Martinez Guillermo",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$1.006.420",fecha:"",obs:"Cuota: 18/20 | Vencido hace sin datos",cuotas:"2",deuda:"$1.006.420"},
-  {nombre:"Luna Melisa",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$1.205.320",fecha:"",obs:"Cuota: 18/20 | Vencido hace sin datos",cuotas:"2",deuda:"$1.205.320"},
-  {nombre:"Chauque Maria Isabel",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$147.922",fecha:"",obs:"Cuota: 18/35 | Vencido hace sin datos",cuotas:"17",deuda:"$147.922"},
-  {nombre:"Copa Ricardo Alberto",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$951.853",fecha:"",obs:"Cuota: 148/150 | Vencido hace sin datos",cuotas:"2",deuda:"$951.853"},
-  {nombre:"Menendez Karina",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$66.350",fecha:"",obs:"Cuota: 149/210 | Vencido hace sin datos",cuotas:"61",deuda:"$66.350"},
-  {nombre:"Moya Aramayo",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$69.933",fecha:"",obs:"Cuota: 20/150 | Vencido hace sin datos",cuotas:"130",deuda:"$69.933"},
-  {nombre:"Renfijes Jose Jonatan",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$43.282",fecha:"",obs:"Cuota: 27/120 | Vencido hace sin datos",cuotas:"93",deuda:"$43.282"},
-  {nombre:"Rocha Liliana Graciela",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$235.544",fecha:"",obs:"Cuota: 44/178 | Vencido hace sin datos",cuotas:"134",deuda:"$235.544"},
-  {nombre:"Guerra Nimia",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$130.917",fecha:"",obs:"Cuota: 198/210 | Vencido hace sin datos",cuotas:"12",deuda:"$130.917"},
-  {nombre:"Herrera Samanta Alejandra 2",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$21.844",fecha:"",obs:"Cuota: 48/72 | Vencido hace sin datos",cuotas:"24",deuda:"$21.844"},
-  {nombre:"Copa Ricardo Alberto 2",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$24.428",fecha:"",obs:"Cuota: 25/90 | Vencido hace sin datos",cuotas:"65",deuda:"$24.428"},
-  {nombre:"Burgos Omar Mario",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$47.238",fecha:"",obs:"Cuota: 24/120 | Vencido hace sin datos",cuotas:"96",deuda:"$47.238"},
-  {nombre:"Renfijes Jose Jonatan 2",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$14.095",fecha:"",obs:"Cuota: 36/60 | Vencido hace sin datos",cuotas:"24",deuda:"$14.095"},
-  {nombre:"Nieto Teresa Jorgelina",zona:"Zona Norte",pago:"Medio",ultima:"Actualmente",monto:"$16.386",fecha:"",obs:"Cuota: 27/90 | Vencido hace sin datos",cuotas:"63",deuda:"$16.386"}
-];
-
-async function cargarAtrasadosIniciales() {
-  // Solo carga si no hay atrasados en la base
-  const existing = await fbGet("atrasados");
-  if (existing) return;
-  for (const c of atrasadosIniciales) {
-    await fbPush("atrasados", c);
-  }
-}
-
-let pollingInterval = null;
-function iniciarPolling() {
-  // Listener en tiempo real — actualiza instantáneamente en todos los celulares
-  db.ref("clientes").on("value", snap => {
-    const data = snap.val();
-    if (data) { clientes = data; reRenderAll(); }
-  });
-}
-
-// ── PANTALLAS ──────────────────────────────────────────────────────────────
-function mostrar(id) {
-  ["pantalla-setup","pantalla-login","pantalla-loading"].forEach(p => {
-    document.getElementById(p).style.display = (p === id) ? "flex" : "none";
-  });
-  // Mostrar app principal solo cuando no hay ninguna pantalla activa
-  const appEl = document.getElementById("app-principal");
-  if (appEl) appEl.style.display = id ? "none" : "block";
-}
-
-// ── UTILIDADES ─────────────────────────────────────────────────────────────
-const hoy = new Date(); hoy.setHours(0,0,0,0);
-function diasParaVencer(f) {
-  if (!f) return null;
-  const d = new Date(f); d.setHours(0,0,0,0);
-  return Math.round((d - hoy) / 86400000);
-}
-function estadoVenc(dias) {
-  if (dias===null) return {label:"Sin fecha",clase:"badge-vigente"};
-  if (dias<0)      return {label:"Vencido",clase:"badge-vencido"};
-  if (dias<=30)    return {label:`Vence en ${dias}d`,clase:"badge-vence"};
-  return             {label:`${dias} días`,clase:"badge-vigente"};
-}
-function badgePago(p) {
-  const k=p?.toLowerCase()||"";
-  if(k==="bien") return "badge-bien";
-  if(k==="medio") return "badge-medio";
-  return "badge-mal";
-}
-function fmtFecha(f) {
-  if(!f) return "—";
-  const [y,m,d]=f.split("-"); return `${d}/${m}/${y}`;
-}
-function listaClientes() {
-  return Object.entries(clientes).map(([k,v])=>({...v,_key:k}));
-}
-
-// ── MENSAJES ───────────────────────────────────────────────────────────────
-function msgGestor(c) {
-  const dias=diasParaVencer(c.fecha), ff=fmtFecha(c.fecha);
-  if(dias===null) return `📋 Seguimiento — ${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago}\nMonto: ${c.monto}\n\n⚠️ Sin fecha de finalización. Actualizar para gestionar renovación.`;
-  if(dias<0)      return `⚠️ CRÉDITO VENCIDO\n\nCliente: ${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago}\nMonto: ${c.monto}\nVenció: ${ff} (hace ${Math.abs(dias)} días)\n\n👉 Contactar urgente para renovación o regularización.`;
-  if(dias<=30)    return `🔔 RENOVACIÓN URGENTE\n\nCliente: ${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago}\nMonto: ${c.monto}\nVence: ${ff} (en ${dias} días)\n\n✅ Contactar esta semana para ofrecer renovación.`;
-  if(dias<=60)    return `📅 Próximo a vencer\n\nCliente: ${c.nombre}\nMonto: ${c.monto} | Finaliza: ${ff} (en ${dias} días)\n\nAgendar visita para ofrecerle renovación.`;
-  return `✅ Vigente — ${c.nombre}\nMonto: ${c.monto} | Finaliza: ${ff} (en ${dias} días)`;
-}
-function msgCliente(c) {
-  const dias=diasParaVencer(c.fecha), ff=fmtFecha(c.fecha);
-  const n=c.nombre.split(" ").pop();
-  if(dias===null||dias>60) return `Hola ${n}! 👋 Te saluda Colman Equipamientos.\n\nQueremos contarte que tenés disponible la posibilidad de renovar o tomar un nuevo crédito con nosotros.\n\nTenemos equipos de hogar y comerciales con financiación cómoda y personalizada. 🛒\n\n¿Te interesa que pasemos a visitarte? ¡Avisanos cuando quieras!`;
-  if(dias<0)      return `Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nQueríamos avisarte que tu crédito venció el ${ff}.\n\nTenemos una propuesta especial de renovación para vos. ¡Es el momento ideal para equiparte!\n\nUn gestor va a pasar a visitarte para contarte las opciones. 😊`;
-  if(dias<=30)    return `Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nTu crédito actual finaliza el ${ff} — te quedan ${dias} días.\n\n🎉 Tenés una oferta especial de renovación:\n• Nuevos montos disponibles\n• Cuotas a tu medida\n• Sin trámites complicados\n\nUn gestor pasa a visitarte esta semana. ¡No te lo pierdas! 💪`;
-  return `Hola ${n}! 👋 Te saluda Colman Equipamientos.\n\nTu crédito finaliza el ${ff} (en ${dias} días).\n\nYa podemos preparar tu renovación para que no quedes sin financiamiento. Tenemos muy buenas opciones. 😊\n\nEn los próximos días pasa un gestor a visitarte. ¡Nos vemos pronto!`;
-}
-
-function copiar(texto, btnId) {
-  navigator.clipboard.writeText(texto).catch(()=>{
-    const t=document.createElement("textarea"); t.value=texto;
-    document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t);
-  });
-  const b=document.getElementById(btnId);
-  if(b){const o=b.textContent; b.textContent="✅ Copiado!"; setTimeout(()=>b.textContent=o,2000);}
-}
-
-// ── CARD HTML ──────────────────────────────────────────────────────────────
-function cardHTML(c) {
-  const dias=diasParaVencer(c.fecha), ev=estadoVenc(dias);
-  const kid="k"+c._key.replace(/[^a-zA-Z0-9]/g,"_");
-  const mg=msgGestor(c).replace(/`/g,"'");
-  const mc=msgCliente(c).replace(/`/g,"'");
-  return `
-  <div class="cliente-card" id="wrap-${kid}">
-    <div class="card-header" onclick="toggle('${kid}')">
-      <div class="card-info">
-        <div class="card-nombre">${c.nombre}</div>
-        <div class="card-meta">${c.monto} · ${fmtFecha(c.fecha)||"sin fecha"}</div>
-        <div class="card-badges">
-          <span class="badge badge-zona">📍 ${c.zona}</span>
-          <span class="badge ${badgePago(c.pago)}">${c.pago}</span>
-          <span class="badge ${ev.clase}">${ev.label}</span>
-        </div>
-      </div>
-      <div class="card-chevron" id="chev-${kid}">▾</div>
-    </div>
-    <div class="card-detail" id="${kid}">
-      <div class="detail-row"><span class="detail-label">Última actividad</span><span class="detail-value">${c.ultima||"—"}</span></div>
-      <div class="detail-row"><span class="detail-label">Finalización</span><span class="detail-value">${fmtFecha(c.fecha)}</span></div>
-      <div class="detail-row"><span class="detail-label">Observaciones</span><span class="detail-value">${c.obs||"—"}</span></div>
-      <div class="msg-tabs">
-        <button class="msg-tab active" id="mt-g-${kid}" onclick="showMsg('${kid}','g')">👤 Para el gestor</button>
-        <button class="msg-tab" id="mt-c-${kid}" onclick="showMsg('${kid}','c')">📲 Para el cliente</button>
-      </div>
-      <div id="msgG-${kid}">
-        <div class="wa-box"><div class="wa-label">💬 Recordatorio interno</div>
-        <div class="wa-msg">${msgGestor(c)}</div>
-        <button class="wa-btn" id="bg-${kid}" onclick="copiar(\`${mg}\`,'bg-${kid}')">📋 Copiar mensaje</button></div>
-      </div>
-      <div id="msgC-${kid}" style="display:none">
-        <div class="wa-box cli"><div class="wa-label">📲 Mensaje para el cliente</div>
-        <div class="wa-msg">${msgCliente(c)}</div>
-        <button class="wa-btn cli-btn" id="bc-${kid}" onclick="copiar(\`${mc}\`,'bc-${kid}')">📋 Copiar para cliente</button></div>
-      </div>
-      <div class="card-actions">
-        <button class="btn-editar" onclick="abrirEditar('${c._key}')">✏️ Editar</button>
-        <button class="btn-borrar" onclick="mostrarConfirm('${kid}')">🗑️ Borrar</button>
-      </div>
-      <div class="confirm-box" id="conf-${kid}">
-        <div class="confirm-txt">¿Seguro que querés borrar a ${c.nombre}?</div>
-        <div class="confirm-btns">
-          <button class="confirm-si" onclick="borrarCliente('${c._key}','${kid}')">Sí, borrar</button>
-          <button class="confirm-no" onclick="ocultarConfirm('${kid}')">Cancelar</button>
-        </div>
+// ══ CARD HTML ══════════════════════════════════════════════════════════════
+function cardCliente(c,k){
+  const d=dvencer(c.fecha);
+  const mg=mgRen(c).replace(/`/g,"'"),mc=mcRen(c).replace(/`/g,"'");
+  return`<div class="card" id="w-${k}">
+  <div class="card-hdr" onclick="tog('d-${k}','ch-${k}')">
+    <div style="flex:1">
+      <div class="c-nom">${c.nombre}</div>
+      <div class="c-meta">${c.monto||"—"} · ${ffecha(c.fecha)}</div>
+      <div class="badges">
+        <span class="badge b-zona">📍 ${c.zona}</span>
+        <span class="badge ${bpago(c.pago)}">${c.pago}</span>
+        <span class="badge ${vcls(d)}">${vlbl(d)}</span>
       </div>
     </div>
-  </div>`;
-}
-
-function toggle(kid) {
-  const d=document.getElementById(kid), ch=document.getElementById("chev-"+kid);
-  const o=d.classList.contains("open");
-  d.classList.toggle("open",!o); ch.classList.toggle("open",!o);
-}
-function showMsg(kid,tipo) {
-  document.getElementById("msgG-"+kid).style.display=tipo==="g"?"block":"none";
-  document.getElementById("msgC-"+kid).style.display=tipo==="c"?"block":"none";
-  document.getElementById("mt-g-"+kid).classList.toggle("active",tipo==="g");
-  document.getElementById("mt-c-"+kid).classList.toggle("active",tipo==="c");
-}
-function mostrarConfirm(kid) { document.getElementById("conf-"+kid).classList.add("open"); }
-function ocultarConfirm(kid) { document.getElementById("conf-"+kid).classList.remove("open"); }
-
-// ── CRUD ───────────────────────────────────────────────────────────────────
-async function borrarCliente(key, kid) {
-  await fbDelete("clientes/"+key);
-  delete clientes[key];
-  document.getElementById("wrap-"+kid)?.remove();
-  reRenderAll();
-}
-
-let editandoKey=null;
-function abrirEditar(key) {
-  const c=clientes[key]; if(!c) return;
-  editandoKey=key;
-  document.getElementById("e-nombre").value=c.nombre||"";
-  document.getElementById("e-zona").value=c.zona||"Zona Norte";
-  document.getElementById("e-pago").value=c.pago||"Bien";
-  document.getElementById("e-monto").value=c.monto||"";
-  document.getElementById("e-fecha").value=c.fecha||"";
-  document.getElementById("e-ultima").value=c.ultima||"";
-  document.getElementById("e-obs").value=c.obs||"";
-  document.getElementById("e-cuotas").value=c.cuotas||"0";
-  document.getElementById("e-deuda").value=c.deuda||"";
-  document.getElementById("modal-editar").classList.add("open");
-}
-function cerrarModal() { document.getElementById("modal-editar").classList.remove("open"); }
-async function guardarEdicion() {
-  if(!editandoKey) return;
-  const upd={
-    nombre:document.getElementById("e-nombre").value.trim(),
-    zona:document.getElementById("e-zona").value,
-    pago:document.getElementById("e-pago").value,
-    monto:document.getElementById("e-monto").value.trim(),
-    fecha:document.getElementById("e-fecha").value,
-    ultima:document.getElementById("e-ultima").value.trim(),
-    obs:document.getElementById("e-obs").value.trim(),
-    cuotas:document.getElementById("e-cuotas").value||"0",
-    deuda:document.getElementById("e-deuda").value.trim(),
-  };
-  await fbPut("clientes/"+editandoKey, upd);
-  clientes[editandoKey]=upd;
-  cerrarModal(); reRenderAll();
-}
-
-async function guardarCliente() {
-  const nombre=document.getElementById("f-nombre").value.trim();
-  if(!nombre){alert("Ingresá el nombre del cliente");return;}
-  const c={
-    nombre, zona:document.getElementById("f-zona").value,
-    pago:document.getElementById("f-pago").value,
-    ultima:document.getElementById("f-ultima").value.trim(),
-    monto:document.getElementById("f-monto").value.trim()||"—",
-    fecha:document.getElementById("f-fecha").value,
-    obs:document.getElementById("f-obs").value.trim(),
-    cuotas:document.getElementById("f-cuotas").value||"0",
-    deuda:document.getElementById("f-deuda").value.trim(),
-  };
-  const res=await fbPush("clientes",c);
-  if(res?.name) clientes[res.name]=c;
-  ["f-nombre","f-ultima","f-monto","f-fecha","f-obs","f-cuotas","f-deuda"].forEach(id=>document.getElementById(id).value="");
-  const n=document.getElementById("nota-guardado");
-  n.style.display="block"; setTimeout(()=>n.style.display="none",2500);
-  reRenderAll();
-}
-
-// ── ZONA BADGE ─────────────────────────────────────────────────────────────
-function onZonaChange() {
-  const val=document.getElementById("filtro-zona").value;
-  const badge=document.getElementById("zona-badge-header");
-  document.getElementById("zona-badge-txt").textContent=val;
-  badge.style.display=val==="todas"?"none":"flex";
-  renderClientes();
-}
-
-// ── RENDERS ────────────────────────────────────────────────────────────────
-function reRenderAll() {
-  renderAlertas();
-  const tab=document.querySelector(".tab.active")?.textContent||"";
-  if(tab.includes("Clientes"))  renderClientes();
-  if(tab.includes("Resumen"))   renderResumen();
-  if(tab.includes("Deudas"))    renderAtrasados();
-}
-function renderAlertas() {
-  const con=document.getElementById("alertas-container");
-  const lista=listaClientes().map(c=>({...c,dias:diasParaVencer(c.fecha)}))
-    .filter(c=>c.dias!==null&&c.dias<=30).sort((a,b)=>a.dias-b.dias);
-  const venc=lista.filter(c=>c.dias<0), prox=lista.filter(c=>c.dias>=0);
-  let h="";
-  if(!lista.length){h=`<div class="empty">✅ No hay créditos urgentes en los próximos 30 días.</div>`;}
-  else {
-    h+=`<div class="alerta-banner"><span style="font-size:18px">🔔</span><span style="font-size:12px;color:var(--naranja);font-weight:600">${lista.length} cliente${lista.length>1?"s":""} requieren atención urgente</span></div>`;
-    if(venc.length){h+=`<div class="sec-title">⚠️ Vencidos (${venc.length})</div>`;venc.forEach(c=>h+=cardHTML(c));}
-    if(prox.length){h+=`<div class="sec-title">🔔 Vencen en 30 días (${prox.length})</div>`;prox.forEach(c=>h+=cardHTML(c));}
-  }
-  con.innerHTML=h;
-}
-function renderClientes() {
-  const zona=document.getElementById("filtro-zona").value;
-  const busq=document.getElementById("buscador").value.toLowerCase().trim();
-  let lista=listaClientes()
-    .filter(c=>(zona==="todas"||c.zona===zona)&&(!busq||c.nombre.toLowerCase().includes(busq)))
-    .map(c=>({...c,dias:diasParaVencer(c.fecha)}))
-    .sort((a,b)=>{
-      if(a.dias===null&&b.dias===null)return 0;
-      if(a.dias===null)return 1; if(b.dias===null)return -1;
-      return a.dias-b.dias;
-    });
-  const con=document.getElementById("clientes-container");
-  if(!lista.length){con.innerHTML=`<div class="empty">No se encontraron clientes.</div>`;return;}
-  let h=`<div class="sec-title">${lista.length} cliente${lista.length>1?"s":""}</div>`;
-  lista.forEach(c=>h+=cardHTML(c));
-  con.innerHTML=h;
-}
-function renderResumen() {
-  const lista=listaClientes();
-  const total=lista.length;
-  const bien=lista.filter(c=>c.pago?.toLowerCase()==="bien").length;
-  const medio=lista.filter(c=>c.pago?.toLowerCase()==="medio").length;
-  const mal=lista.filter(c=>["mal","paga mal"].includes(c.pago?.toLowerCase())).length;
-  const urg=lista.filter(c=>{const d=diasParaVencer(c.fecha);return d!==null&&d<=30;}).length;
-  const zonaStats=["Zona Norte","Zona Oeste","Zona Sudeste"].map(z=>{
-    const t=lista.filter(c=>c.zona===z).length;
-    const u=lista.filter(c=>c.zona===z&&(()=>{const d=diasParaVencer(c.fecha);return d!==null&&d<=30;})()).length;
-    return{z,t,u};
-  });
-  document.getElementById("resumen-container").innerHTML=`
-    <div class="sec-title">Resumen general</div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">Total clientes</div></div>
-      <div class="stat-card"><div class="stat-num stat-naranja">${urg}</div><div class="stat-lbl">🔔 Por renovar (30d)</div></div>
-      <div class="stat-card"><div class="stat-num stat-verde">${bien}</div><div class="stat-lbl">✅ Pagan bien</div></div>
-      <div class="stat-card"><div class="stat-num stat-ambar">${medio}</div><div class="stat-lbl">⚠️ Pagan medio</div></div>
+    <span class="chev" id="ch-${k}">▾</span>
+  </div>
+  <div class="det" id="d-${k}">
+    <div class="drow"><span class="dlbl">Última actividad</span><span class="dval">${c.ultima||"—"}</span></div>
+    <div class="drow"><span class="dlbl">Finalización</span><span class="dval">${ffecha(c.fecha)}</span></div>
+    <div class="drow" style="border:none"><span class="dlbl">Observaciones</span><span class="dval">${c.obs||"—"}</span></div>
+    <div class="mtabs">
+      <button class="mtab on" id="mt-g-${k}" onclick="showMsg('${k}','g')">👤 Para el gestor</button>
+      <button class="mtab" id="mt-c-${k}" onclick="showMsg('${k}','c')">📲 Para el cliente</button>
     </div>
-    <div class="stat-card" style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span class="stat-lbl">Pagan mal</span>
-        <span class="stat-num stat-rojo" style="font-size:18px">${mal}</span>
-      </div>
-      <div class="prog-bar-wrap"><div class="prog-bar" style="width:${total?Math.round(mal/total*100):0}%;background:#C0392B"></div></div>
+    <div id="mg-${k}"><div class="wabox g"><div class="walbl">💬 Recordatorio interno</div><div class="wamsg">${mgRen(c)}</div><button class="wabtn g" id="bg-${k}" onclick="copiar(\`${mg}\`,'bg-${k}')">📋 Copiar mensaje</button></div></div>
+    <div id="mc-${k}" style="display:none"><div class="wabox c"><div class="walbl">📲 Mensaje para el cliente</div><div class="wamsg">${mcRen(c)}</div><button class="wabtn c" id="bc-${k}" onclick="copiar(\`${mc}\`,'bc-${k}')">📋 Copiar para cliente</button></div></div>
+    <div class="accs">
+      <button class="btn-edit" onclick="abrirEditar('${k}','cliente')">✏️ Editar</button>
+      <button class="btn-del" onclick="document.getElementById('cf-${k}').classList.add('on')">🗑️ Borrar</button>
     </div>
-    <div class="sec-title">Por zona</div>
-    ${zonaStats.map(s=>`
-    <div class="stat-card" style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-weight:600;font-size:13px;color:var(--azul)">${s.z}</div><div class="stat-lbl">${s.t} clientes</div></div>
-        ${s.u>0?`<span class="badge badge-vence">🔔 ${s.u} por renovar</span>`:`<span class="badge badge-bien">✅ Al día</span>`}
-      </div>
-    </div>`).join("")}`;
-}
-
-// ── SEMÁFORO DEUDA ─────────────────────────────────────────────────────────
-function semaforo(cuotas) {
-  const c = parseInt(cuotas) || 0;
-  if (c <= 0)  return null;
-  if (c <= 2)  return {clase:"deuda-amarillo", icono:"🟡", label:`${c} cuota${c>1?"s":""} atrasada${c>1?"s":""}`, gravedad:1};
-  if (c <= 4)  return {clase:"deuda-naranja",  icono:"🟠", label:`${c} cuotas atrasadas`, gravedad:2};
-  return         {clase:"deuda-rojo",     icono:"🔴", label:`${c} cuotas atrasadas`, gravedad:3};
-}
-
-function msgDeuda(c) {
-  const s = semaforo(c.cuotas);
-  if (!s) return "";
-  const n = c.nombre.split(" ").pop();
-  if (s.gravedad === 1) return `🟡 ATRASO LEVE
-
-Cliente: ${c.nombre}
-Zona: ${c.zona}
-Cuotas atrasadas: ${c.cuotas}
-Monto adeudado: ${c.deuda||"no registrado"}
-
-Contactar para acordar pago de las cuotas pendientes. Mantener buena relación.`;
-  if (s.gravedad === 2) return `🟠 ATRASO IMPORTANTE
-
-Cliente: ${c.nombre}
-Zona: ${c.zona}
-Cuotas atrasadas: ${c.cuotas}
-Monto adeudado: ${c.deuda||"no registrado"}
-
-Visitar urgente. Ofrecer plan de pago para regularizar la deuda antes de que crezca más.`;
-  return `🔴 DEUDA CRÍTICA
-
-Cliente: ${c.nombre}
-Zona: ${c.zona}
-Cuotas atrasadas: ${c.cuotas}
-Monto adeudado: ${c.deuda||"no registrado"}
-
-⚠️ Gestión urgente. Presentar opciones de regularización. Si no responde, escalar al supervisor.`;
-}
-
-function msgDeudaCliente(c) {
-  const s = semaforo(c.cuotas);
-  if (!s) return "";
-  const n = c.nombre.split(" ").pop();
-  if (s.gravedad === 1) return `Hola ${n}! 👋 Te contactamos de Colman Equipamientos.
-
-Notamos que tenés ${c.cuotas} cuota${c.cuotas>1?"s":""} pendiente${c.cuotas>1?"s":""}${c.deuda ? " por " + c.deuda : ""}.
-
-Sabemos que a veces los tiempos se complican. Pasamos a visitarte para encontrar la mejor manera de ponerte al día. 😊
-
-¡Quedamos a tu disposición!`;
-  if (s.gravedad === 2) return `Hola ${n}! Te contactamos de Colman Equipamientos.
-
-Te informamos que registramos ${c.cuotas} cuotas impagas${c.deuda ? " por un total de " + c.deuda : ""}.
-
-Es importante que nos comuniquemos para regularizar tu situación y evitar inconvenientes futuros.
-
-Un gestor va a pasar a visitarte. ¡Esperamos poder ayudarte! 🤝`;
-  return `Hola ${n}, te contactamos de Colman Equipamientos.
-
-Registramos una deuda de ${c.cuotas} cuotas${c.deuda ? " por " + c.deuda : ""} sin regularizar.
-
-⚠️ Es urgente que nos comuniquemos para encontrar una solución. Un gestor va a visitarte a la brevedad.
-
-Quedan a tu disposición para cualquier consulta.`;
-}
-
-// ── RENDER ATRASADOS ───────────────────────────────────────────────────────
-let filtroGravedad = "todos";
-
-function renderAtrasados() {
-  const con = document.getElementById("atrasados-container");
-  const todos = listaClientes().filter(c => parseInt(c.cuotas) > 0);
-  const filtrados = filtroGravedad === "todos" ? todos :
-    todos.filter(c => {
-      const g = semaforo(c.cuotas)?.gravedad;
-      if (filtroGravedad === "leve")     return g === 1;
-      if (filtroGravedad === "importante") return g === 2;
-      if (filtroGravedad === "critico")  return g === 3;
-      return true;
-    });
-
-  filtrados.sort((a,b) => (parseInt(b.cuotas)||0) - (parseInt(a.cuotas)||0));
-
-  if (!todos.length) {
-    con.innerHTML = `<div class="empty">✅ No hay clientes con cuotas atrasadas registradas.</div>`; return;
-  }
-
-  // Totales
-  const totalDeudores = todos.length;
-  const criticos  = todos.filter(c => semaforo(c.cuotas)?.gravedad === 3).length;
-  const naranja   = todos.filter(c => semaforo(c.cuotas)?.gravedad === 2).length;
-  const amarillo  = todos.filter(c => semaforo(c.cuotas)?.gravedad === 1).length;
-
-  let h = `
-  <div class="deuda-total-card">
-    <div style="font-weight:700;font-size:14px;color:var(--azul);margin-bottom:10px">Resumen de deudas</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-      <div style="background:#FFCDD2;border-radius:10px;padding:8px">
-        <div style="font-size:20px;font-weight:700;color:#B71C1C">${criticos}</div>
-        <div style="font-size:10px;color:#B71C1C;font-weight:600">🔴 Críticos</div>
-      </div>
-      <div style="background:#FFE0B2;border-radius:10px;padding:8px">
-        <div style="font-size:20px;font-weight:700;color:#E65100">${naranja}</div>
-        <div style="font-size:10px;color:#E65100;font-weight:600">🟠 Importantes</div>
-      </div>
-      <div style="background:#FFF9C4;border-radius:10px;padding:8px">
-        <div style="font-size:20px;font-weight:700;color:#F57F17">${amarillo}</div>
-        <div style="font-size:10px;color:#F57F17;font-weight:600">🟡 Leves</div>
+    <div class="confirm" id="cf-${k}">
+      <div class="conf-txt">¿Borrar a ${c.nombre}?</div>
+      <div class="conf-btns">
+        <button class="conf-si" onclick="borrar('clientes','${k}','w-${k}')">Sí, borrar</button>
+        <button class="conf-no" onclick="document.getElementById('cf-${k}').classList.remove('on')">Cancelar</button>
       </div>
     </div>
   </div>
+</div>`}
 
-  <div class="filtro-row">
-    <button class="filtro-btn ${filtroGravedad==='todos'?'active':''}" onclick="setFiltroDeuda('todos')">Todos (${totalDeudores})</button>
-    <button class="filtro-btn ${filtroGravedad==='critico'?'active':''}" onclick="setFiltroDeuda('critico')">🔴 Críticos</button>
-    <button class="filtro-btn ${filtroGravedad==='importante'?'active':''}" onclick="setFiltroDeuda('importante')">🟠 Importantes</button>
-    <button class="filtro-btn ${filtroGravedad==='leve'?'active':''}" onclick="setFiltroDeuda('leve')">🟡 Leves</button>
-  </div>`;
-
-  if (!filtrados.length) {
-    h += `<div class="empty">No hay clientes en esta categoría.</div>`;
-  } else {
-    h += `<div class="sec-title">${filtrados.length} cliente${filtrados.length>1?"s":""}</div>`;
-    filtrados.forEach(c => h += cardDeudaHTML(c));
-  }
-  con.innerHTML = h;
-}
-
-function setFiltroDeuda(f) {
-  filtroGravedad = f;
-  renderAtrasados();
-}
-
-function cardDeudaHTML(c) {
-  const s = semaforo(c.cuotas);
-  if (!s) return "";
-  const kid = "d"+c._key.replace(/[^a-zA-Z0-9]/g,"_");
-  const claseCard = s.gravedad===1?"semaforo-amarillo":s.gravedad===2?"semaforo-naranja":"semaforo-rojo";
-  const mg = msgDeuda(c).replace(/`/g,"'");
-  const mc = msgDeudaCliente(c).replace(/`/g,"'");
-  return `
-  <div class="cliente-card ${claseCard}" id="wrap-${kid}">
-    <div class="card-header" onclick="toggle('${kid}')">
-      <div class="card-info">
-        <div class="card-nombre">${c.nombre}</div>
-        <div class="card-meta">${c.zona} · ${c.monto}</div>
-        <div class="card-badges">
-          <span class="badge badge-zona">📍 ${c.zona}</span>
-          <span class="badge ${badgePago(c.pago)}">${c.pago}</span>
-          <span class="deuda-chip ${s.clase}">${s.icono} ${s.label}</span>
-          ${c.deuda ? `<span class="badge" style="background:#F5F5F5;color:#333">💰 ${c.deuda}</span>` : ""}
-        </div>
-      </div>
-      <div class="card-chevron" id="chev-${kid}">▾</div>
-    </div>
-    <div class="card-detail" id="${kid}">
-      <div class="detail-row"><span class="detail-label">Cuotas atrasadas</span><span class="detail-value" style="color:var(--rojo);font-weight:700">${c.cuotas}</span></div>
-      <div class="detail-row"><span class="detail-label">Monto adeudado</span><span class="detail-value">${c.deuda||"—"}</span></div>
-      <div class="detail-row"><span class="detail-label">Última actividad</span><span class="detail-value">${c.ultima||"—"}</span></div>
-      <div class="detail-row"><span class="detail-label">Observaciones</span><span class="detail-value">${c.obs||"—"}</span></div>
-      <div class="msg-tabs">
-        <button class="msg-tab active" id="dmt-g-${kid}" onclick="showMsgD('${kid}','g')">👤 Para el gestor</button>
-        <button class="msg-tab" id="dmt-c-${kid}" onclick="showMsgD('${kid}','c')">📲 Para el cliente</button>
-      </div>
-      <div id="dmsgG-${kid}">
-        <div class="wa-box"><div class="wa-label">💬 Instrucción de gestión</div>
-        <div class="wa-msg">${msgDeuda(c)}</div>
-        <button class="wa-btn" id="dbg-${kid}" onclick="copiar(\`${mg}\`,'dbg-${kid}')">📋 Copiar mensaje</button></div>
-      </div>
-      <div id="dmsgC-${kid}" style="display:none">
-        <div class="wa-box cli"><div class="wa-label">📲 Mensaje para el cliente</div>
-        <div class="wa-msg">${msgDeudaCliente(c)}</div>
-        <button class="wa-btn cli-btn" id="dbc-${kid}" onclick="copiar(\`${mc}\`,'dbc-${kid}')">📋 Copiar para cliente</button></div>
-      </div>
-      <div class="card-actions">
-        <button class="btn-editar" onclick="abrirEditar('${c._key}')">✏️ Editar</button>
-        <button class="btn-borrar" onclick="mostrarConfirm('d${c._key.replace(/[^a-zA-Z0-9]/g,"_")}')">🗑️ Borrar</button>
-      </div>
-      <div class="confirm-box" id="conf-d${c._key.replace(/[^a-zA-Z0-9]/g,"_")}">
-        <div class="confirm-txt">¿Seguro que querés borrar a ${c.nombre}?</div>
-        <div class="confirm-btns">
-          <button class="confirm-si" onclick="borrarCliente('${c._key}','d${c._key.replace(/[^a-zA-Z0-9]/g,"_")}')">Sí, borrar</button>
-          <button class="confirm-no" onclick="ocultarConfirm('d${c._key.replace(/[^a-zA-Z0-9]/g,"_")}')">Cancelar</button>
-        </div>
+function cardAtrasado(c,k){
+  const s=semaf(c.cuotas);if(!s)return"";
+  const mg=mgDeu(c).replace(/`/g,"'"),mc=mcDeu(c).replace(/`/g,"'");
+  return`<div class="card ${s.card}" id="w-${k}">
+  <div class="card-hdr" onclick="tog('d-${k}','ch-${k}')">
+    <div style="flex:1">
+      <div class="c-nom">${c.nombre}</div>
+      <div class="c-meta">${c.zona} · ${c.deuda||"—"}</div>
+      <div class="badges">
+        <span class="badge b-zona">📍 ${c.zona}</span>
+        <span class="deuda-chip ${s.cls}">${s.ico} ${s.lbl}</span>
+        ${c.diasVencido>0?`<span class="badge b-vencido">${c.diasVencido}d vencido</span>`:""}
       </div>
     </div>
+    <span class="chev" id="ch-${k}">▾</span>
+  </div>
+  <div class="det" id="d-${k}">
+    <div class="drow"><span class="dlbl">Cuotas atrasadas</span><span class="dval" style="color:var(--rojo)">${c.cuotas}</span></div>
+    <div class="drow"><span class="dlbl">Monto adeudado</span><span class="dval">${c.deuda||"—"}</span></div>
+    <div class="drow" style="border:none"><span class="dlbl">Observaciones</span><span class="dval">${c.obs||"—"}</span></div>
+    <div class="mtabs">
+      <button class="mtab on" id="dmt-g-${k}" onclick="showMsgD('${k}','g')">👤 Para el gestor</button>
+      <button class="mtab" id="dmt-c-${k}" onclick="showMsgD('${k}','c')">📲 Para el cliente</button>
+    </div>
+    <div id="dmg-${k}"><div class="wabox g"><div class="walbl">💬 Instrucción de gestión</div><div class="wamsg">${mgDeu(c)}</div><button class="wabtn g" id="dbg-${k}" onclick="copiar(\`${mg}\`,'dbg-${k}')">📋 Copiar mensaje</button></div></div>
+    <div id="dmc-${k}" style="display:none"><div class="wabox c"><div class="walbl">📲 Mensaje para el cliente</div><div class="wamsg">${mcDeu(c)}</div><button class="wabtn c" id="dbc-${k}" onclick="copiar(\`${mc}\`,'dbc-${k}')">📋 Copiar para cliente</button></div></div>
+    <div class="accs">
+      <button class="btn-edit" onclick="abrirEditar('${k}','atrasado')">✏️ Editar</button>
+      <button class="btn-del" onclick="document.getElementById('dcf-${k}').classList.add('on')">🗑️ Borrar</button>
+    </div>
+    <div class="confirm" id="dcf-${k}">
+      <div class="conf-txt">¿Borrar a ${c.nombre}?</div>
+      <div class="conf-btns">
+        <button class="conf-si" onclick="borrar('atrasados','${k}','w-${k}')">Sí, borrar</button>
+        <button class="conf-no" onclick="document.getElementById('dcf-${k}').classList.remove('on')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>`}
+
+function tog(detId,chevId){const d=document.getElementById(detId),c=document.getElementById(chevId);d.classList.toggle("on");c.classList.toggle("on")}
+function showMsg(k,t){document.getElementById("mg-"+k).style.display=t==="g"?"block":"none";document.getElementById("mc-"+k).style.display=t==="c"?"block":"none";document.getElementById("mt-g-"+k).classList.toggle("on",t==="g");document.getElementById("mt-c-"+k).classList.toggle("on",t==="c")}
+function showMsgD(k,t){document.getElementById("dmg-"+k).style.display=t==="g"?"block":"none";document.getElementById("dmc-"+k).style.display=t==="c"?"block":"none";document.getElementById("dmt-g-"+k).classList.toggle("on",t==="g");document.getElementById("dmt-c-"+k).classList.toggle("on",t==="c")}
+
+// ══ CRUD ══════════════════════════════════════════════════════════════════
+function setSyncing(s){document.getElementById("sync-dot").classList.toggle("on",s)}
+async function borrar(col,key,wid){setSyncing(true);await db.ref(`${col}/${key}`).remove();setSyncing(false);document.getElementById(wid)?.remove()}
+function abrirEditar(key,tipo){
+  const c=tipo==="cliente"?clientes[key]:atrasados[key];if(!c)return;
+  editKey=key;editTipo=tipo;
+  document.getElementById("e-nom").value=c.nombre||"";
+  document.getElementById("e-zona").value=c.zona||"Norte";
+  document.getElementById("e-pago").value=c.pago||"Bien";
+  document.getElementById("e-monto").value=c.monto||"";
+  document.getElementById("e-fecha").value=c.fecha||"";
+  document.getElementById("e-cuotas").value=c.cuotas||0;
+  document.getElementById("e-deuda").value=c.deuda||"";
+  document.getElementById("e-ultima").value=c.ultima||"";
+  document.getElementById("e-obs").value=c.obs||"";
+  document.getElementById("modal").classList.add("on");
+}
+function cerrarModal(){document.getElementById("modal").classList.remove("on")}
+async function guardarEdicion(){
+  if(!editKey)return;
+  const upd={nombre:document.getElementById("e-nom").value.trim(),zona:document.getElementById("e-zona").value,pago:document.getElementById("e-pago").value,monto:document.getElementById("e-monto").value.trim(),fecha:document.getElementById("e-fecha").value,cuotas:parseInt(document.getElementById("e-cuotas").value)||0,deuda:document.getElementById("e-deuda").value.trim(),ultima:document.getElementById("e-ultima").value.trim(),obs:document.getElementById("e-obs").value.trim()};
+  setSyncing(true);
+  await db.ref(`${editTipo==="cliente"?"clientes":"atrasados"}/${editKey}`).set(upd);
+  setSyncing(false);
+  cerrarModal();
+}
+async function guardarNuevo(){
+  const nom=document.getElementById("f-nom").value.trim();
+  if(!nom){alert("Ingresá el nombre");return}
+  const cuotas=parseInt(document.getElementById("f-cuotas").value)||0;
+  const c={nombre:nom,zona:document.getElementById("f-zona").value,pago:document.getElementById("f-pago").value,monto:document.getElementById("f-monto").value.trim()||"—",fecha:document.getElementById("f-fecha").value,cuotas,deuda:document.getElementById("f-deuda").value.trim(),ultima:document.getElementById("f-ultima").value.trim(),obs:document.getElementById("f-obs").value.trim()};
+  setSyncing(true);
+  await db.ref(cuotas>0?"atrasados":"clientes").push(c);
+  setSyncing(false);
+  ["f-nom","f-monto","f-fecha","f-cuotas","f-deuda","f-ultima","f-obs"].forEach(id=>document.getElementById(id).value="");
+  const n=document.getElementById("nota");n.style.display="block";setTimeout(()=>n.style.display="none",2500);
+}
+
+// ══ RENDERS ═══════════════════════════════════════════════════════════════
+function onZona(){const v=document.getElementById("filtro-zona").value;document.getElementById("zona-chip").style.display=v?"flex":"none";document.getElementById("zona-txt").textContent="Zona "+v;renderClientes()}
+
+function renderAlertas(){
+  const lista=Object.entries(clientes).map(([k,v])=>({...v,_k:k,d:dvencer(v.fecha)})).filter(c=>c.d!==null&&c.d<=30).sort((a,b)=>a.d-b.d);
+  const venc=lista.filter(c=>c.d<0),prox=lista.filter(c=>c.d>=0);
+  let h="";
+  if(!lista.length){h=`<div class="empty">✅ No hay créditos urgentes en los próximos 30 días.</div>`}
+  else{
+    h+=`<div class="banner">🔔 ${lista.length} cliente${lista.length>1?"s":""} requieren atención urgente</div>`;
+    if(venc.length){h+=`<div class="sec">⚠️ Vencidos (${venc.length})</div>`;venc.forEach(c=>h+=cardCliente(c,c._k))}
+    if(prox.length){h+=`<div class="sec">🔔 Vencen en 30 días (${prox.length})</div>`;prox.forEach(c=>h+=cardCliente(c,c._k))}
+  }
+  document.getElementById("c-alertas").innerHTML=h;
+}
+
+function renderClientes(){
+  const zona=document.getElementById("filtro-zona").value;
+  const busq=document.getElementById("buscar").value.toLowerCase();
+  let lista=Object.entries(clientes).map(([k,v])=>({...v,_k:k,d:dvencer(v.fecha)}))
+    .filter(c=>(!zona||c.zona===zona)&&(!busq||c.nombre.toLowerCase().includes(busq)))
+    .sort((a,b)=>{if(a.d===null&&b.d===null)return 0;if(a.d===null)return 1;if(b.d===null)return -1;return a.d-b.d});
+  let h=`<div class="sec">${lista.length} cliente${lista.length!==1?"s":""}</div>`;
+  lista.forEach(c=>h+=cardCliente(c,c._k));
+  document.getElementById("c-clientes").innerHTML=lista.length?h:`<div class="empty">No se encontraron clientes.</div>`;
+}
+
+function renderDeudas(){
+  const todos=Object.entries(atrasados).map(([k,v])=>({...v,_k:k})).filter(c=>parseInt(c.cuotas)>0);
+  const filt=filtroDeuda==="todos"?todos:todos.filter(c=>{const g=semaf(c.cuotas)?.g;return(filtroDeuda==="critico"&&g===3)||(filtroDeuda==="importante"&&g===2)||(filtroDeuda==="leve"&&g===1)});
+  filt.sort((a,b)=>(parseInt(b.cuotas)||0)-(parseInt(a.cuotas)||0));
+  const cr=todos.filter(c=>semaf(c.cuotas)?.g===3).length,na=todos.filter(c=>semaf(c.cuotas)?.g===2).length,am=todos.filter(c=>semaf(c.cuotas)?.g===1).length;
+  let h=`<div style="background:white;border-radius:14px;border:1px solid var(--borde);padding:14px;margin-bottom:12px">
+    <div style="font-weight:700;font-size:14px;color:var(--azul);margin-bottom:10px">Resumen de deudas</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div style="background:#FFCDD2;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:700;color:#B71C1C">${cr}</div><div style="font-size:10px;color:#B71C1C;font-weight:600">🔴 Críticos</div></div>
+      <div style="background:#FFE0B2;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:700;color:#E65100">${na}</div><div style="font-size:10px;color:#E65100;font-weight:600">🟠 Importantes</div></div>
+      <div style="background:#FFF9C4;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:700;color:#F57F17">${am}</div><div style="font-size:10px;color:#F57F17;font-weight:600">🟡 Leves</div></div>
+    </div>
+  </div>
+  <div class="frow2">
+    <button class="fbtn2 ${filtroDeuda==="todos"?"on":""}" onclick="setFiltroDeuda('todos')">Todos (${todos.length})</button>
+    <button class="fbtn2 ${filtroDeuda==="critico"?"on":""}" onclick="setFiltroDeuda('critico')">🔴 Críticos</button>
+    <button class="fbtn2 ${filtroDeuda==="importante"?"on":""}" onclick="setFiltroDeuda('importante')">🟠 Importantes</button>
+    <button class="fbtn2 ${filtroDeuda==="leve"?"on":""}" onclick="setFiltroDeuda('leve')">🟡 Leves</button>
   </div>`;
+  if(!filt.length)h+=`<div class="empty">No hay clientes en esta categoría.</div>`;
+  else{h+=`<div class="sec">${filt.length} cliente${filt.length!==1?"s":""}</div>`;filt.forEach(c=>h+=cardAtrasado(c,c._k))}
+  document.getElementById("c-deudas").innerHTML=h;
+}
+function setFiltroDeuda(f){filtroDeuda=f;renderDeudas()}
+
+function renderResumen(){
+  const lc=Object.values(clientes),la=Object.values(atrasados);
+  const urg=lc.filter(c=>{const d=dvencer(c.fecha);return d!==null&&d<=30}).length;
+  document.getElementById("c-resumen").innerHTML=`
+    <div class="sec">Renovaciones</div>
+    <div class="sgrid">
+      <div class="scard"><div class="snum">${lc.length}</div><div class="slbl">Total clientes</div></div>
+      <div class="scard"><div class="snum" style="color:var(--naranja)">${urg}</div><div class="slbl">🔔 Por renovar (30d)</div></div>
+      <div class="scard"><div class="snum" style="color:var(--verde)">${lc.filter(c=>c.pago==="Bien").length}</div><div class="slbl">✅ Pagan bien</div></div>
+      <div class="scard"><div class="snum" style="color:var(--ambar)">${lc.filter(c=>c.pago==="Medio").length}</div><div class="slbl">⚠️ Pagan medio</div></div>
+    </div>
+    <div class="sec">Deudas</div>
+    <div class="sgrid">
+      <div class="scard"><div class="snum" style="color:var(--rojo)">${la.length}</div><div class="slbl">Total deudores</div></div>
+      <div class="scard"><div class="snum" style="color:var(--rojo)">${la.filter(c=>semaf(c.cuotas)?.g===3).length}</div><div class="slbl">🔴 Críticos</div></div>
+    </div>
+    <div class="sec">Por zona</div>
+    ${["Norte","Oeste","Sudeste"].map(z=>{
+      const tot=lc.filter(c=>c.zona===z).length;
+      const u=lc.filter(c=>c.zona===z&&(()=>{const d=dvencer(c.fecha);return d!==null&&d<=30})()).length;
+      const deu=la.filter(c=>c.zona===z).length;
+      return`<div class="scard" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:13px;color:var(--azul)">Zona ${z}</div><div class="slbl">${tot} clientes · ${deu} deudores</div></div>${u>0?`<span class="badge b-vence">🔔 ${u} renovar</span>`:`<span class="badge b-bien">✅ Al día</span>`}</div></div>`;
+    }).join("")}`;
 }
 
-function showMsgD(kid, tipo) {
-  document.getElementById("dmsgG-"+kid).style.display = tipo==="g"?"block":"none";
-  document.getElementById("dmsgC-"+kid).style.display = tipo==="c"?"block":"none";
-  document.getElementById("dmt-g-"+kid).classList.toggle("active", tipo==="g");
-  document.getElementById("dmt-c-"+kid).classList.toggle("active", tipo==="c");
+function reRenderAll(){
+  renderAlertas();
+  if(tabActual==="clientes")renderClientes();
+  if(tabActual==="deudas")renderDeudas();
+  if(tabActual==="resumen")renderResumen();
 }
 
-function switchTab(tab) {
-  const names=["alertas","clientes","atrasados","nuevo","resumen"];
-  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",names[i]===tab));
-  document.querySelectorAll(".vista").forEach(v=>v.classList.remove("active"));
-  document.getElementById("vista-"+tab).classList.add("active");
-  if(tab==="alertas") renderAlertas();
-  if(tab==="clientes") renderClientes();
-  if(tab==="resumen") renderResumen();
-  if(tab==="atrasados") renderAtrasados();
+// ══ TABS ══════════════════════════════════════════════════════════════════
+function setTab(t){
+  tabActual=t;
+  document.querySelectorAll(".tab").forEach((el,i)=>el.classList.toggle("on",["alertas","clientes","deudas","nuevo","resumen"][i]===t));
+  document.querySelectorAll(".vista").forEach(v=>v.classList.remove("on"));
+  document.getElementById("v-"+t).classList.add("on");
+  if(t==="clientes")renderClientes();
+  if(t==="deudas")renderDeudas();
+  if(t==="resumen")renderResumen();
 }
 
-function setFecha() {
-  const dias_es=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
-  const meses_es=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-  document.getElementById("fecha-hoy").textContent=`${dias_es[hoy.getDay()]} ${hoy.getDate()} de ${meses_es[hoy.getMonth()]} ${hoy.getFullYear()}`;
-}
+// ══ DATOS INICIALES ════════════════════════════════════════════════════════
+const CI=[
+  {nombre:"Figueroa Hernan Agustin",zona:"Norte",pago:"Bien",monto:"$445.180",fecha:"2027-03-01",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Vargas Marcela Noemi",zona:"Norte",pago:"Bien",monto:"$1.212.950",fecha:"2026-06-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:"Dos créditos"},
+  {nombre:"Chavez Juan Manuel",zona:"Norte",pago:"Mal",monto:"$300.000",fecha:"",cuotas:0,deuda:"",ultima:"",obs:"Atrasado CrediColman"},
+  {nombre:"Saavedra Adriana",zona:"Norte",pago:"Bien",monto:"$200.000",fecha:"2026-10-18",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Cañizares Dario Ruben",zona:"Norte",pago:"Medio",monto:"$600.000",fecha:"2026-10-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Vazquez Jaqueline Gloria",zona:"Norte",pago:"Bien",monto:"$150.000",fecha:"2026-09-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Renfiges Jose Jonatan",zona:"Norte",pago:"Medio",monto:"$2.796.730",fecha:"2026-12-03",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Jurado Carlos Modesto",zona:"Norte",pago:"Bien",monto:"$900.000",fecha:"2026-10-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Huanca Lidia",zona:"Norte",pago:"Bien",monto:"$1.161.000",fecha:"2026-09-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Garcia Mirta Estela",zona:"Norte",pago:"Bien",monto:"$800.000",fecha:"2026-06-11",cuotas:0,deuda:"",ultima:"Actualmente",obs:"3 créditos"},
+  {nombre:"Saracho Eduardo Alejandro",zona:"Norte",pago:"Bien",monto:"$1.000.000",fecha:"2026-09-30",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Martinez Luisa Elena",zona:"Norte",pago:"Bien",monto:"$1.000.000",fecha:"2026-10-06",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Espinosa Maria Cristina",zona:"Norte",pago:"Bien",monto:"$2.000.000",fecha:"2026-10-18",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Cutipa Francisco",zona:"Norte",pago:"Mal",monto:"$800.000",fecha:"",cuotas:0,deuda:"",ultima:"",obs:""},
+  {nombre:"Aparicio Nelida",zona:"Norte",pago:"Medio",monto:"$500.000",fecha:"2026-11-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Ortega Carina Mabel",zona:"Oeste",pago:"Bien",monto:"$500.000",fecha:"2026-09-11",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Jorge Jaqueline Melisa",zona:"Oeste",pago:"Medio",monto:"$700.000",fecha:"2026-10-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Lamas Alicia Milagro",zona:"Oeste",pago:"Medio",monto:"$500.000",fecha:"2026-10-05",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Mamani Erika Yanina",zona:"Oeste",pago:"Bien",monto:"$800.000",fecha:"2026-06-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:"Dos créditos"},
+  {nombre:"Portal Ortiz Claudia Susana",zona:"Oeste",pago:"Bien",monto:"$500.000",fecha:"2026-09-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Vilte Maria De Los Angeles",zona:"Oeste",pago:"Mal",monto:"$1.145.850",fecha:"",cuotas:0,deuda:"",ultima:"",obs:"Paga mal"},
+  {nombre:"Alvarado Diego Armando",zona:"Oeste",pago:"Mal",monto:"$300.000",fecha:"2026-10-06",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Monetengro Maximiliano",zona:"Sudeste",pago:"Bien",monto:"$300.000",fecha:"2026-10-04",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Casimiro Constanza Belen",zona:"Sudeste",pago:"Bien",monto:"$1.586.660",fecha:"2027-01-23",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Coria Pamela Alejandra",zona:"Sudeste",pago:"Bien",monto:"$770.061",fecha:"2026-10-05",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Beeche Isaias Alexander",zona:"Sudeste",pago:"Bien",monto:"$300.004",fecha:"2026-10-23",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Zulema Esteban Mabel",zona:"Sudeste",pago:"Bien",monto:"$800.000",fecha:"2026-10-28",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Navarro Ana Maria",zona:"Sudeste",pago:"Bien",monto:"$500.000",fecha:"2026-10-04",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Aguilera Rogelio",zona:"Sudeste",pago:"Medio",monto:"$975.000",fecha:"2026-12-01",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Fontañez Andrea",zona:"Sudeste",pago:"Mal",monto:"$150.000",fecha:"2026-12-08",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Pastrana Miguel Angel",zona:"Sudeste",pago:"Mal",monto:"$551.000",fecha:"",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+];
+const AI=[
+  {nombre:"Cutipa Nelly Milagro",zona:"Norte",pago:"Mal",monto:"$2.290.000",cuotas:5,deuda:"$2.290.000",diasVencido:279,obs:"12/12 vencido"},
+  {nombre:"Aparicio Ileana",zona:"Norte",pago:"Mal",monto:"$1.192.000",cuotas:5,deuda:"$1.192.000",diasVencido:285,obs:"38/38 vencido"},
+  {nombre:"Rojo Adet Ricardo",zona:"Norte",pago:"Mal",monto:"$1.543.430",cuotas:5,deuda:"$1.543.430",diasVencido:372,obs:"30/30 vencido"},
+  {nombre:"Krivoshen Maximiliano",zona:"Norte",pago:"Mal",monto:"$1.655.190",cuotas:5,deuda:"$1.655.190",diasVencido:349,obs:"210/210 vencido"},
+  {nombre:"Hessling Virginia Gisel",zona:"Norte",pago:"Mal",monto:"$1.704.800",cuotas:5,deuda:"$1.704.800",diasVencido:349,obs:"210/210 vencido"},
+  {nombre:"Navarro Magdalena Beatriz",zona:"Norte",pago:"Mal",monto:"$133.477",cuotas:10,deuda:"$133.477",diasVencido:1341,obs:"7/7 vencido"},
+  {nombre:"Lozano Jorge Alfredo",zona:"Norte",pago:"Mal",monto:"$84.640",cuotas:10,deuda:"$84.640",diasVencido:1348,obs:"20/20 vencido"},
+  {nombre:"Guanca Juan Roberto",zona:"Norte",pago:"Mal",monto:"$105.008",cuotas:2,deuda:"$105.008",diasVencido:119,obs:"12/12 vencido"},
+  {nombre:"Chocobar Natalia Fabiana",zona:"Norte",pago:"Mal",monto:"$468.535",cuotas:10,deuda:"$468.535",diasVencido:531,obs:"15/15 vencido"},
+  {nombre:"Mercado Federico Cornelio",zona:"Norte",pago:"Mal",monto:"$154.500",cuotas:7,deuda:"$154.500",diasVencido:409,obs:"12/12 vencido"},
+  {nombre:"Martinez Guillermo",zona:"Norte",pago:"Medio",monto:"$1.189.020",cuotas:3,deuda:"$1.006.420",diasVencido:0,obs:"18/20 parcial"},
+  {nombre:"Carrasco Claudio Adrian",zona:"Oeste",pago:"Mal",monto:"$635.430",cuotas:5,deuda:"$635.430",diasVencido:66,obs:"10/10 vencido"},
+  {nombre:"Sacarias Juan Carlos",zona:"Oeste",pago:"Mal",monto:"$412.250",cuotas:10,deuda:"$412.250",diasVencido:690,obs:"6/6 vencido"},
+  {nombre:"Mapelliz Judith Gabriela",zona:"Oeste",pago:"Mal",monto:"$170.945",cuotas:10,deuda:"$170.945",diasVencido:1249,obs:"15/15 vencido"},
+  {nombre:"Castillo Lucas Emanuel",zona:"Oeste",pago:"Mal",monto:"$766.010",cuotas:5,deuda:"$766.010",diasVencido:312,obs:"35/35 vencido"},
+  {nombre:"Romero Liliana",zona:"Oeste",pago:"Mal",monto:"$592.490",cuotas:7,deuda:"$592.490",diasVencido:413,obs:"10/10 vencido"},
+  {nombre:"Vargas Ricardo Amado",zona:"Oeste",pago:"Mal",monto:"$706.600",cuotas:7,deuda:"$706.600",diasVencido:421,obs:"15/15 vencido"},
+  {nombre:"Lamas Alicia Milagro",zona:"Oeste",pago:"Medio",monto:"$225.011",cuotas:3,deuda:"$100.247",diasVencido:0,obs:"18/21 parcial"},
+  {nombre:"Condori Norma Beatriz",zona:"Sudeste",pago:"Mal",monto:"$404.000",cuotas:7,deuda:"$404.000",diasVencido:453,obs:"4/4 vencido"},
+  {nombre:"Orozco Grecia",zona:"Sudeste",pago:"Mal",monto:"$754.756",cuotas:10,deuda:"$754.756",diasVencido:659,obs:"6/6 vencido"},
+  {nombre:"Coronel Juan Carlos",zona:"Sudeste",pago:"Mal",monto:"$468.530",cuotas:10,deuda:"$468.530",diasVencido:783,obs:"10/10 vencido"},
+  {nombre:"Pastrana Miguel Angel",zona:"Sudeste",pago:"Mal",monto:"$505.060",cuotas:5,deuda:"$505.060",diasVencido:294,obs:"10/10 vencido"},
+  {nombre:"Gonzalez Monica Lorena",zona:"Sudeste",pago:"Mal",monto:"$393.790",cuotas:10,deuda:"$393.790",diasVencido:488,obs:"10/10 vencido"},
+  {nombre:"Velasquez Marina Romina",zona:"Sudeste",pago:"Mal",monto:"$622.500",cuotas:7,deuda:"$622.500",diasVencido:438,obs:"15/15 vencido"},
+  {nombre:"Aguilera Rogelio",zona:"Sudeste",pago:"Medio",monto:"$1.035.060",cuotas:3,deuda:"$157.515",diasVencido:0,obs:"16/60 parcial"},
+  {nombre:"Mamani Patricia",zona:"Sudeste",pago:"Medio",monto:"$880.240",cuotas:3,deuda:"$257.688",diasVencido:0,obs:"9/15 parcial"},
+  {nombre:"Castillo Modesta Carina",zona:"Sudeste",pago:"Medio",monto:"$512.511",cuotas:3,deuda:"$138.219",diasVencido:0,obs:"10/21 parcial"},
+];
 
-// ── INICIO ─────────────────────────────────────────────────────────────────
-auth.onAuthStateChanged(user => {
-  if (user) {
-    cargarApp();
-  } else {
-    mostrar("pantalla-login");
+// ══ INICIO ══════════════════════════════════════════════════════════════════
+async function init(){
+  // Fecha
+  const ds=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  document.getElementById("fecha").textContent=`${ds[hoy.getDay()]} ${hoy.getDate()} de ${ms[hoy.getMonth()]} ${hoy.getFullYear()}`;
+
+  try{
+    // Reglas de Firebase necesitan ser abiertas — usar .read y .write = true
+    const snapC=await db.ref("clientes").once("value");
+    if(!snapC.val()){
+      document.getElementById("loading-msg").textContent="Primera vez: cargando datos...";
+      for(const c of CI)await db.ref("clientes").push(c);
+    }
+    const snapA=await db.ref("atrasados").once("value");
+    if(!snapA.val()){
+      for(const a of AI)await db.ref("atrasados").push(a);
+    }
+    // Listeners tiempo real
+    db.ref("clientes").on("value",s=>{clientes=s.val()||{};reRenderAll()});
+    db.ref("atrasados").on("value",s=>{atrasados=s.val()||{};reRenderAll()});
+    document.getElementById("loading").style.display="none";
+    document.getElementById("app").style.display="block";
+    renderAlertas();
+  }catch(e){
+    document.getElementById("loading-msg").textContent="❌ Error: "+e.message;
   }
-});
-
-// Enter en login
-document.addEventListener("keydown", e => {
-  if (e.key === "Enter" && document.getElementById("pantalla-login").style.display !== "none") {
-    iniciarSesion();
-  }
-});
+}
+init();
 </script>
 </body>
 </html>
