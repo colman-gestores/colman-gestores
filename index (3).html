@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Colman — Gestores</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--azul:#1A3A6B;--cel:#75AADB;--cel-l:#EAF3FB;--verde:#1E8449;--ver-l:#D5F5E3;--ambar:#D68910;--amb-l:#FEF9E7;--rojo:#C0392B;--roj-l:#FADBD8;--naranja:#E67E22;--nar-l:#FDEBD0;--gris:#F4F6F8;--txt:#1C2833;--txt2:#5D6D7E;--borde:#E0E6EE;--r:14px;--rs:8px}
+body{font-family:'DM Sans',sans-serif;background:var(--gris);color:var(--txt);min-height:100vh;padding-bottom:80px}
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--azul);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--cel);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{color:white;font-size:13px}
+/* HEADER */
+.hdr{background:var(--azul);padding:14px 14px 10px;position:sticky;top:0;z-index:100}
+.hdr-top{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:8px}
+.hex{width:30px;height:30px;background:var(--cel);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--azul)}
+.logo-txt{color:white;font-weight:700;font-size:14px}
+.logo-txt span{color:var(--cel)}
+.sync{width:8px;height:8px;border-radius:50%;background:#4CAF50;display:inline-block}
+.sync.on{background:var(--ambar);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.zona-chip{background:var(--cel);color:var(--azul);font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.fecha{color:rgba(255,255,255,.5);font-size:10px;margin-top:4px}
+.tabs{display:flex;gap:3px;background:rgba(255,255,255,.08);border-radius:10px;padding:3px;margin-top:10px}
+.tab{flex:1;padding:6px 2px;border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.6);font-family:inherit;font-size:10px;font-weight:500;cursor:pointer}
+.tab.on{background:white;color:var(--azul);font-weight:700}
+/* VISTAS */
+.vista{display:none;padding:12px}
+.vista.on{display:block}
+/* BANNER */
+.banner{background:var(--nar-l);border:1px solid var(--naranja);border-radius:var(--rs);padding:10px 12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:var(--naranja);font-weight:600}
+.sec{font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px}
+.empty{text-align:center;padding:40px 20px;color:var(--txt2);font-size:13px}
+/* CARD */
+.card{background:white;border-radius:var(--r);border:1px solid var(--borde);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;cursor:pointer}
+.c-nom{font-weight:600;font-size:14px;color:var(--txt)}
+.c-meta{font-size:11px;color:var(--txt2);margin-top:2px}
+.badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.badge{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;display:inline-block}
+.b-bien{background:var(--ver-l);color:var(--verde)}
+.b-medio{background:var(--amb-l);color:var(--ambar)}
+.b-mal{background:var(--roj-l);color:var(--rojo)}
+.b-vence{background:var(--nar-l);color:var(--naranja)}
+.b-vigente{background:var(--cel-l);color:var(--azul)}
+.b-vencido{background:var(--roj-l);color:var(--rojo)}
+.b-zona{background:#EEF2FF;color:#3730A3}
+.chev{color:var(--txt2);font-size:16px;margin-left:8px;transition:transform .25s}
+.chev.on{transform:rotate(180deg)}
+/* DETALLE */
+.det{display:none;padding:0 14px 14px;border-top:1px solid var(--borde)}
+.det.on{display:block}
+.drow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #F0F3F6;font-size:12px}
+.drow:last-of-type{border-bottom:none}
+.dlbl{color:var(--txt2)}
+.dval{font-weight:600;text-align:right;max-width:55%;word-break:break-word}
+/* MSG TABS */
+.mtabs{display:flex;gap:6px;margin:10px 0 0}
+.mtab{flex:1;padding:6px 4px;border:1.5px solid var(--borde);border-radius:var(--rs);background:white;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;text-align:center}
+.mtab.on{border-color:var(--azul);color:var(--azul);background:var(--cel-l)}
+.wabox{border-radius:var(--rs);padding:10px 12px;margin-top:8px}
+.wabox.g{background:#E7F8EE;border:1px solid #A9DFBF}
+.wabox.c{background:#FFF8E1;border:1px solid #FFD54F}
+.walbl{font-size:11px;font-weight:700;margin-bottom:6px}
+.wabox.g .walbl{color:#27AE60}
+.wabox.c .walbl{color:#E65100}
+.wamsg{font-size:12px;line-height:1.6;font-family:'DM Mono',monospace;white-space:pre-wrap}
+.wabox.g .wamsg{color:#1C5631}
+.wabox.c .wamsg{color:#4E342E}
+.wabtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;padding:10px;border:none;border-radius:var(--rs);color:white;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.wabtn.g{background:#25D366}
+.wabtn.c{background:#FF8F00}
+/* ACCIONES */
+.accs{display:flex;gap:8px;margin-top:10px}
+.btn-edit{flex:1;padding:8px;background:var(--cel-l);border:1px solid var(--cel);border-radius:var(--rs);color:var(--azul);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.btn-del{flex:1;padding:8px;background:var(--roj-l);border:1px solid var(--rojo);border-radius:var(--rs);color:var(--rojo);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.confirm{background:var(--roj-l);border:1px solid var(--rojo);border-radius:var(--rs);padding:12px;margin-top:10px;display:none}
+.confirm.on{display:block}
+.conf-txt{font-size:12px;color:var(--rojo);font-weight:600;margin-bottom:10px}
+.conf-btns{display:flex;gap:8px}
+.conf-si{flex:1;padding:8px;background:var(--rojo);border:none;border-radius:var(--rs);color:white;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.conf-no{flex:1;padding:8px;background:white;border:1px solid var(--borde);border-radius:var(--rs);color:var(--txt2);font-family:inherit;font-size:12px;cursor:pointer}
+/* SEMAFORO */
+.card.sam-a{border-left:4px solid #F9A825}
+.card.sam-n{border-left:4px solid var(--naranja)}
+.card.sam-r{border-left:4px solid var(--rojo)}
+.deuda-chip{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;display:inline-block}
+.dc-a{background:#FFF9C4;color:#F57F17}
+.dc-n{background:#FFE0B2;color:#E65100}
+.dc-r{background:#FFCDD2;color:#B71C1C}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:flex-end}
+.modal-bg.on{display:flex}
+.modal{background:white;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-title{font-weight:700;font-size:16px;color:var(--azul);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;font-size:22px;color:var(--txt2);cursor:pointer}
+/* FORM */
+.fcard{background:white;border-radius:var(--r);border:1px solid var(--borde);padding:16px}
+.ftit{font-weight:700;font-size:15px;color:var(--azul);margin-bottom:14px}
+.fg{margin-bottom:12px}
+.fl{font-size:11px;font-weight:600;color:var(--txt2);margin-bottom:5px;display:block}
+.fi,.fs{width:100%;padding:10px 12px;border:1.5px solid var(--borde);border-radius:var(--rs);font-family:inherit;font-size:14px;color:var(--txt);background:white;outline:none;appearance:none}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fbtn{width:100%;padding:13px;background:var(--azul);border:none;border-radius:var(--rs);color:white;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.nota{background:var(--ver-l);border:1px solid var(--verde);border-radius:var(--rs);padding:10px;font-size:12px;color:var(--verde);font-weight:600;display:none;margin-top:10px;text-align:center}
+/* STATS */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.scard{background:white;border-radius:var(--r);border:1px solid var(--borde);padding:12px 14px}
+.snum{font-size:26px;font-weight:700;line-height:1}
+.slbl{font-size:11px;color:var(--txt2);margin-top:4px;font-weight:500}
+/* FILTROS */
+.frow2{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.fbtn2{padding:5px 10px;border:1.5px solid var(--borde);border-radius:20px;background:white;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer}
+.fbtn2.on{border-color:var(--azul);color:var(--azul);background:var(--cel-l)}
+.swrap{position:relative;margin-bottom:12px}
+.sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--txt2);font-size:14px}
+.sinput{width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--borde);border-radius:var(--rs);font-family:inherit;font-size:14px;background:white;outline:none}
+/* ZONA BAR */
+.zona-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.zbt{padding:6px 14px;border:1.5px solid var(--borde);border-radius:20px;background:white;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer}
+.zbt.on{border-color:var(--azul);color:white;background:var(--azul)}
+/* TIPO SELECTOR NUEVO */
+.tipo-sel{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.tipo-btn{padding:14px 8px;border:2px solid var(--borde);border-radius:12px;background:white;font-family:inherit;font-size:12px;font-weight:600;color:var(--txt2);cursor:pointer;text-align:center;line-height:1.4}
+.tipo-btn.t-ren{border-color:var(--azul);background:var(--cel-l);color:var(--azul)}
+.tipo-btn.t-deu{border-color:var(--rojo);background:var(--roj-l);color:var(--rojo)}
+.sec-form{display:none}.sec-form.on{display:block}
+.hdr-form{font-size:13px;font-weight:700;padding:8px 12px;border-radius:var(--rs);margin-bottom:12px}
+.hdr-ren{background:var(--cel-l);color:var(--azul)}
+.hdr-deu{background:var(--roj-l);color:var(--rojo)}
+.fbtn-deu{width:100%;padding:13px;background:var(--rojo);border:none;border-radius:var(--rs);color:white;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p id="loading-msg">Conectando...</p></div>
+
+<div id="app" style="display:none">
+  <div class="hdr">
+    <div class="hdr-top">
+      <div class="logo"><div class="hex">G</div><div class="logo-txt">GRUPO <span>COLMAN</span></div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="zona-chip" class="zona-chip" style="display:none"><span id="zona-txt"></span><span class="sync" id="sync-dot"></span></div>
+      </div>
+    </div>
+    <div class="fecha" id="fecha"></div>
+    <div class="tabs">
+      <button class="tab on" onclick="setTab('alertas')">🔔 Alertas</button>
+      <button class="tab" onclick="setTab('clientes')">👥 Clientes</button>
+      <button class="tab" onclick="setTab('deudas')">⚠️ Deudas</button>
+      <button class="tab" onclick="setTab('nuevo')">➕ Nuevo</button>
+      <button class="tab" onclick="setTab('resumen')">📊 Resumen</button>
+    </div>
+  </div>
+
+  <div class="vista on" id="v-alertas">
+    <div class="zona-bar">
+      <button class="zbt on" onclick="setZonaAl('')">Todas</button>
+      <button class="zbt" onclick="setZonaAl('Norte')">Norte</button>
+      <button class="zbt" onclick="setZonaAl('Oeste')">Oeste</button>
+      <button class="zbt" onclick="setZonaAl('Sudeste')">Sudeste</button>
+    </div>
+    <div id="c-alertas"></div>
+  </div>
+  <div class="vista" id="v-clientes">
+    <div class="zona-bar">
+      <button class="zbt on" onclick="setZonaCl('')">Todas</button>
+      <button class="zbt" onclick="setZonaCl('Norte')">Norte</button>
+      <button class="zbt" onclick="setZonaCl('Oeste')">Oeste</button>
+      <button class="zbt" onclick="setZonaCl('Sudeste')">Sudeste</button>
+    </div>
+    <div class="swrap"><span class="sico">🔍</span><input class="sinput" id="buscar" placeholder="Buscar cliente..." oninput="renderClientes()"></div>
+    <div id="c-clientes"></div>
+  </div>
+  <div class="vista" id="v-deudas">
+    <div class="zona-bar">
+      <button class="zbt on" onclick="setZonaDe('')">Todas</button>
+      <button class="zbt" onclick="setZonaDe('Norte')">Norte</button>
+      <button class="zbt" onclick="setZonaDe('Oeste')">Oeste</button>
+      <button class="zbt" onclick="setZonaDe('Sudeste')">Sudeste</button>
+    </div>
+    <div id="c-deudas"></div>
+  </div>
+  <div class="vista" id="v-nuevo">
+    <div class="fcard">
+      <div class="ftit" style="margin-bottom:8px">¿Qué tipo de cliente querés registrar?</div>
+      <div class="tipo-sel">
+        <button class="tipo-btn t-ren" id="btn-ren" onclick="setTipo('ren')">🔄 Renovación<br><span style="font-size:10px;font-weight:400">Crédito activo o por vencer</span></button>
+        <button class="tipo-btn" id="btn-deu" onclick="setTipo('deu')">⚠️ Atrasado<br><span style="font-size:10px;font-weight:400">Cuotas impagas o mora</span></button>
+      </div>
+      <!-- RENOVACIÓN -->
+      <div class="sec-form on" id="form-ren">
+        <div class="hdr-form hdr-ren">🔄 Nuevo cliente — Renovación</div>
+        <div class="fg"><label class="fl">Nombre y Apellido *</label><input class="fi" id="rn" placeholder="García María Elena"></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Zona *</label><select class="fs" id="rzo"><option value="Norte">Zona Norte</option><option value="Oeste">Zona Oeste</option><option value="Sudeste">Zona Sudeste</option></select></div>
+          <div class="fg"><label class="fl">Cómo paga *</label><select class="fs" id="rp"><option>Bien</option><option>Medio</option><option>Mal</option></select></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Monto del crédito</label><input class="fi" id="rm" placeholder="$300.000"></div>
+          <div class="fg"><label class="fl">Fecha fin del crédito</label><input class="fi" id="rf" type="date"></div>
+        </div>
+        <div class="fg"><label class="fl">Última actividad</label><input class="fi" id="rlt" placeholder="Actualmente"></div>
+        <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="rob" placeholder="Notas..."></div>
+        <button class="fbtn" onclick="guardarRen()">Guardar cliente renovación</button>
+      </div>
+      <!-- ATRASADO -->
+      <div class="sec-form" id="form-deu">
+        <div class="hdr-form hdr-deu">⚠️ Nuevo cliente — Atrasado</div>
+        <div class="fg"><label class="fl">Nombre y Apellido *</label><input class="fi" id="dn" placeholder="García María Elena"></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Zona *</label><select class="fs" id="dzo"><option value="Norte">Zona Norte</option><option value="Oeste">Zona Oeste</option><option value="Sudeste">Zona Sudeste</option></select></div>
+          <div class="fg"><label class="fl">Cómo paga</label><select class="fs" id="dp"><option>Mal</option><option>Medio</option><option>Bien</option></select></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Cuotas atrasadas *</label><input class="fi" id="dcu" type="number" min="1" placeholder="5"></div>
+          <div class="fg"><label class="fl">Monto adeudado</label><input class="fi" id="ddu" placeholder="$500.000"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Monto total crédito</label><input class="fi" id="dm" placeholder="$1.000.000"></div>
+          <div class="fg"><label class="fl">Días vencido</label><input class="fi" id="ddv" type="number" min="0" placeholder="0"></div>
+        </div>
+        <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="dob" placeholder="Ej: 12/12 vencido"></div>
+        <button class="fbtn-deu" onclick="guardarDeu()">Guardar cliente atrasado</button>
+      </div>
+      <div class="nota" id="nota">✅ Cliente guardado y sincronizado ☁️</div>
+    </div>
+  </div>
+  <div class="vista" id="v-resumen"><div id="c-resumen"></div></div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-title">Editar cliente <button class="modal-close" onclick="cerrarModal()">✕</button></div>
+    <div class="fg"><label class="fl">Nombre</label><input class="fi" id="e-nom"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Zona</label><select class="fs" id="e-zona"><option value="Norte">Norte</option><option value="Oeste">Oeste</option><option value="Sudeste">Sudeste</option></select></div>
+      <div class="fg"><label class="fl">Cómo paga</label><select class="fs" id="e-pago"><option>Bien</option><option>Medio</option><option>Mal</option></select></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Monto</label><input class="fi" id="e-monto"></div>
+      <div class="fg"><label class="fl">Fecha fin</label><input class="fi" id="e-fecha" type="date"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Cuotas atrasadas</label><input class="fi" id="e-cuotas" type="number" min="0"></div>
+      <div class="fg"><label class="fl">Monto adeudado</label><input class="fi" id="e-deuda"></div>
+    </div>
+    <div class="fg"><label class="fl">Última actividad</label><input class="fi" id="e-ultima"></div>
+    <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="e-obs"></div>
+    <button class="fbtn" onclick="guardarEdicion()">Guardar cambios</button>
+  </div>
+</div>
+
+<script>
+// ══ FIREBASE — SIN LOGIN ═══════════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:"AIzaSyBCDVn_r-n0ZpHw9W8m_iOOafzYTLjv1MQ",
+  databaseURL:"https://grupo-colman-default-rtdb.firebaseio.com",
+  projectId:"grupo-colman"
+});
+const db = firebase.database();
+
+// ══ ESTADO ════════════════════════════════════════════════════════════════
+let clientes={}, atrasados={}, tabActual="alertas", filtroDeuda="todos", editKey=null, editTipo=null;
+let zonaAl="", zonaCl="", zonaDe="", tipoNuevo="ren";
+function setZonaAl(z){zonaAl=z;document.querySelectorAll("#v-alertas .zbt").forEach(b=>b.classList.toggle("on",b.textContent.trim()===(z||"Todas")));actualizarChip(z);renderAlertas();}
+function setZonaCl(z){zonaCl=z;document.querySelectorAll("#v-clientes .zbt").forEach(b=>b.classList.toggle("on",b.textContent.trim()===(z||"Todas")));actualizarChip(z);renderClientes();}
+function setZonaDe(z){zonaDe=z;document.querySelectorAll("#v-deudas .zbt").forEach(b=>b.classList.toggle("on",b.textContent.trim()===(z||"Todas")));actualizarChip(z);renderDeudas();}
+function actualizarChip(z){document.getElementById("zona-chip").style.display=z?"flex":"none";document.getElementById("zona-txt").textContent="Zona "+z;}
+function setTipo(t){tipoNuevo=t;document.getElementById("btn-ren").className="tipo-btn"+(t==="ren"?" t-ren":"");document.getElementById("btn-deu").className="tipo-btn"+(t==="deu"?" t-deu":"");document.getElementById("form-ren").className="sec-form"+(t==="ren"?" on":"");document.getElementById("form-deu").className="sec-form"+(t==="deu"?" on":"");};
+let zonaAl="", zonaCl="", zonaDe="", tipoNuevo="ren";
+
+function setZonaAl(z){zonaAl=z;document.querySelectorAll("#v-alertas .zbt").forEach(b=>b.classList.toggle("on",b.textContent.trim()===(z||"Todas")));actualizarChip(z);renderAlertas();}
+function setZonaCl(z){zonaCl=z;document.querySelectorAll("#v-clientes .zbt").forEach(b=>b.classList.toggle("on",b.textContent.trim()===(z||"Todas")));actualizarChip(z);renderClientes();}
+function setZonaDe(z){zonaDe=z;document.querySelectorAll("#v-deudas .zbt").forEach(b=>b.classList.toggle("on",b.textContent.trim()===(z||"Todas")));actualizarChip(z);renderDeudas();}
+function actualizarChip(z){document.getElementById("zona-chip").style.display=z?"flex":"none";document.getElementById("zona-txt").textContent="Zona "+z;}
+function setTipo(t){tipoNuevo=t;document.getElementById("btn-ren").className="tipo-btn"+(t==="ren"?" t-ren":"");document.getElementById("btn-deu").className="tipo-btn"+(t==="deu"?" t-deu":"");document.getElementById("form-ren").className="sec-form"+(t==="ren"?" on":"");document.getElementById("form-deu").className="sec-form"+(t==="deu"?" on":"");}
+
+// ══ UTILIDADES ══════════════════════════════════════════════════════════════
+const hoy=new Date();hoy.setHours(0,0,0,0);
+function dvencer(f){if(!f)return null;const d=new Date(f);d.setHours(0,0,0,0);return Math.round((d-hoy)/86400000)}
+function ffecha(f){if(!f)return"—";const[y,m,d]=f.split("-");return`${d}/${m}/${y}`}
+function semaf(c){const n=parseInt(c)||0;if(n<=0)return null;if(n<=2)return{cls:"dc-a",card:"sam-a",ico:"🟡",lbl:`${n} cuota${n>1?"s":""} atrasada${n>1?"s":""}`,g:1};if(n<=4)return{cls:"dc-n",card:"sam-n",ico:"🟠",lbl:`${n} cuotas atrasadas`,g:2};return{cls:"dc-r",card:"sam-r",ico:"🔴",lbl:`${n} cuotas atrasadas`,g:3}}
+function bpago(p){if(p==="Bien")return"b-bien";if(p==="Medio")return"b-medio";return"b-mal"}
+function vcls(d){if(d===null)return"b-vigente";if(d<0)return"b-vencido";if(d<=30)return"b-vence";return"b-vigente"}
+function vlbl(d){if(d===null)return"Sin fecha";if(d<0)return"Vencido";if(d<=30)return`Vence en ${d}d`;return`${d} días`}
+
+// MENSAJES
+function mgRen(c){const d=dvencer(c.fecha),f=ffecha(c.fecha);if(d===null)return`📋 ${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago} | Monto: ${c.monto||"—"}\n\n⚠️ Sin fecha de finalización. Actualizar para gestionar renovación.`;if(d<0)return`⚠️ CRÉDITO VENCIDO\n\n${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago}\nMonto: ${c.monto||"—"} | Venció: ${f} (hace ${Math.abs(d)} días)\n\n👉 Contactar urgente para renovación.`;if(d<=30)return`🔔 RENOVACIÓN URGENTE\n\n${c.nombre}\nZona: ${c.zona} | Pago: ${c.pago}\nMonto: ${c.monto||"—"} | Vence: ${f} (en ${d} días)\n\n✅ Contactar esta semana para ofrecer renovación.`;if(d<=60)return`📅 Próximo a vencer\n\n${c.nombre} | Monto: ${c.monto||"—"}\nFinaliza: ${f} (en ${d} días)\n\nAgendar visita para ofrecerle renovación.`;return`✅ Vigente — ${c.nombre}\nMonto: ${c.monto||"—"} | Finaliza: ${f} (en ${d} días)`}
+function mcRen(c){const d=dvencer(c.fecha),f=ffecha(c.fecha);const n=c.nombre.split(" ").pop();if(!d||d>60)return`Hola ${n}! 👋 Te saluda Colman Equipamientos.\n\nTenés disponible la posibilidad de renovar o tomar un nuevo crédito con nosotros.\n\nTenemos equipos de hogar y comerciales con financiación cómoda. 🛒\n\n¿Te interesa que pasemos a visitarte?`;if(d<0)return`Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nTu crédito venció el ${f}. Tenemos una propuesta especial de renovación para vos.\n\nUn gestor va a pasar a visitarte. 😊`;if(d<=30)return`Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nTu crédito finaliza el ${f} — te quedan ${d} días.\n\n🎉 Tenés una oferta especial de renovación:\n• Nuevos montos disponibles\n• Cuotas a tu medida\n• Sin trámites complicados\n\nUn gestor pasa a visitarte esta semana. 💪`;return`Hola ${n}! 👋 Te saluda Colman Equipamientos.\n\nTu crédito finaliza el ${f} (en ${d} días).\n\nYa podemos preparar tu renovación. Tenemos muy buenas opciones. 😊\n\nEn los próximos días pasa un gestor a visitarte.`}
+function mgDeu(c){const s=semaf(c.cuotas);if(!s)return"";if(s.g===1)return`🟡 ATRASO LEVE\n\n${c.nombre}\nZona: ${c.zona} | Cuotas: ${c.cuotas}\nDeuda: ${c.deuda||"no registrado"}\n\nContactar para acordar pago.`;if(s.g===2)return`🟠 ATRASO IMPORTANTE\n\n${c.nombre}\nZona: ${c.zona} | Cuotas: ${c.cuotas}\nDeuda: ${c.deuda||"no registrado"}\n\nVisitar urgente. Ofrecer plan de pago.`;return`🔴 DEUDA CRÍTICA\n\n${c.nombre}\nZona: ${c.zona} | Cuotas: ${c.cuotas}\nDeuda: ${c.deuda||"no registrado"}\n\n⚠️ Gestión urgente. Escalar si no responde.`}
+function mcDeu(c){const s=semaf(c.cuotas);if(!s)return"";const n=c.nombre.split(" ").pop();if(s.g===1)return`Hola ${n}! 👋 Te contactamos de Colman Equipamientos.\n\nNotamos que tenés ${c.cuotas} cuota${c.cuotas>1?"s":""} pendiente${c.cuotas>1?"s":""}.\n\nPasamos a visitarte para ponerte al día. 😊`;if(s.g===2)return`Hola ${n}! Te contactamos de Colman Equipamientos.\n\nRegistramos ${c.cuotas} cuotas impagas.\n\nEs importante regularizar. Un gestor va a visitarte. 🤝`;return`Hola ${n}, te contactamos de Colman Equipamientos.\n\nRegistramos una deuda de ${c.cuotas} cuotas sin regularizar.\n\n⚠️ Un gestor va a visitarte a la brevedad.`}
+
+function copiar(txt,btnId){navigator.clipboard.writeText(txt).catch(()=>{const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t)});const b=document.getElementById(btnId);if(b){const o=b.textContent;b.textContent="✅ Copiado!";setTimeout(()=>b.textContent=o,2000)}}
+
+// ══ CARD HTML ══════════════════════════════════════════════════════════════
+function cardCliente(c,k){
+  const d=dvencer(c.fecha);
+  const mg=mgRen(c).replace(/`/g,"'"),mc=mcRen(c).replace(/`/g,"'");
+  return`<div class="card" id="w-${k}">
+  <div class="card-hdr" onclick="tog('d-${k}','ch-${k}')">
+    <div style="flex:1">
+      <div class="c-nom">${c.nombre}</div>
+      <div class="c-meta">${c.monto||"—"} · ${ffecha(c.fecha)}</div>
+      <div class="badges">
+        <span class="badge b-zona">📍 ${c.zona}</span>
+        <span class="badge ${bpago(c.pago)}">${c.pago}</span>
+        <span class="badge ${vcls(d)}">${vlbl(d)}</span>
+      </div>
+    </div>
+    <span class="chev" id="ch-${k}">▾</span>
+  </div>
+  <div class="det" id="d-${k}">
+    <div class="drow"><span class="dlbl">Última actividad</span><span class="dval">${c.ultima||"—"}</span></div>
+    <div class="drow"><span class="dlbl">Finalización</span><span class="dval">${ffecha(c.fecha)}</span></div>
+    <div class="drow" style="border:none"><span class="dlbl">Observaciones</span><span class="dval">${c.obs||"—"}</span></div>
+    <div class="mtabs">
+      <button class="mtab on" id="mt-g-${k}" onclick="showMsg('${k}','g')">👤 Para el gestor</button>
+      <button class="mtab" id="mt-c-${k}" onclick="showMsg('${k}','c')">📲 Para el cliente</button>
+    </div>
+    <div id="mg-${k}"><div class="wabox g"><div class="walbl">💬 Recordatorio interno</div><div class="wamsg">${mgRen(c)}</div><button class="wabtn g" id="bg-${k}" onclick="copiar(\`${mg}\`,'bg-${k}')">📋 Copiar mensaje</button></div></div>
+    <div id="mc-${k}" style="display:none"><div class="wabox c"><div class="walbl">📲 Mensaje para el cliente</div><div class="wamsg">${mcRen(c)}</div><button class="wabtn c" id="bc-${k}" onclick="copiar(\`${mc}\`,'bc-${k}')">📋 Copiar para cliente</button></div></div>
+    <div class="accs">
+      <button class="btn-edit" onclick="abrirEditar('${k}','cliente')">✏️ Editar</button>
+      <button class="btn-del" onclick="document.getElementById('cf-${k}').classList.add('on')">🗑️ Borrar</button>
+    </div>
+    <div class="confirm" id="cf-${k}">
+      <div class="conf-txt">¿Borrar a ${c.nombre}?</div>
+      <div class="conf-btns">
+        <button class="conf-si" onclick="borrar('clientes','${k}','w-${k}')">Sí, borrar</button>
+        <button class="conf-no" onclick="document.getElementById('cf-${k}').classList.remove('on')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>`}
+
+function cardAtrasado(c,k){
+  const s=semaf(c.cuotas);if(!s)return"";
+  const mg=mgDeu(c).replace(/`/g,"'"),mc=mcDeu(c).replace(/`/g,"'");
+  return`<div class="card ${s.card}" id="w-${k}">
+  <div class="card-hdr" onclick="tog('d-${k}','ch-${k}')">
+    <div style="flex:1">
+      <div class="c-nom">${c.nombre}</div>
+      <div class="c-meta">${c.zona} · ${c.deuda||"—"}</div>
+      <div class="badges">
+        <span class="badge b-zona">📍 ${c.zona}</span>
+        <span class="deuda-chip ${s.cls}">${s.ico} ${s.lbl}</span>
+        ${c.diasVencido>0?`<span class="badge b-vencido">${c.diasVencido}d vencido</span>`:""}
+      </div>
+    </div>
+    <span class="chev" id="ch-${k}">▾</span>
+  </div>
+  <div class="det" id="d-${k}">
+    <div class="drow"><span class="dlbl">Cuotas atrasadas</span><span class="dval" style="color:var(--rojo)">${c.cuotas}</span></div>
+    <div class="drow"><span class="dlbl">Monto adeudado</span><span class="dval">${c.deuda||"—"}</span></div>
+    <div class="drow" style="border:none"><span class="dlbl">Observaciones</span><span class="dval">${c.obs||"—"}</span></div>
+    <div class="mtabs">
+      <button class="mtab on" id="dmt-g-${k}" onclick="showMsgD('${k}','g')">👤 Para el gestor</button>
+      <button class="mtab" id="dmt-c-${k}" onclick="showMsgD('${k}','c')">📲 Para el cliente</button>
+    </div>
+    <div id="dmg-${k}"><div class="wabox g"><div class="walbl">💬 Instrucción de gestión</div><div class="wamsg">${mgDeu(c)}</div><button class="wabtn g" id="dbg-${k}" onclick="copiar(\`${mg}\`,'dbg-${k}')">📋 Copiar mensaje</button></div></div>
+    <div id="dmc-${k}" style="display:none"><div class="wabox c"><div class="walbl">📲 Mensaje para el cliente</div><div class="wamsg">${mcDeu(c)}</div><button class="wabtn c" id="dbc-${k}" onclick="copiar(\`${mc}\`,'dbc-${k}')">📋 Copiar para cliente</button></div></div>
+    <div class="accs">
+      <button class="btn-edit" onclick="abrirEditar('${k}','atrasado')">✏️ Editar</button>
+      <button class="btn-del" onclick="document.getElementById('dcf-${k}').classList.add('on')">🗑️ Borrar</button>
+    </div>
+    <div class="confirm" id="dcf-${k}">
+      <div class="conf-txt">¿Borrar a ${c.nombre}?</div>
+      <div class="conf-btns">
+        <button class="conf-si" onclick="borrar('atrasados','${k}','w-${k}')">Sí, borrar</button>
+        <button class="conf-no" onclick="document.getElementById('dcf-${k}').classList.remove('on')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>`}
+
+function tog(detId,chevId){const d=document.getElementById(detId),c=document.getElementById(chevId);d.classList.toggle("on");c.classList.toggle("on")}
+function showMsg(k,t){document.getElementById("mg-"+k).style.display=t==="g"?"block":"none";document.getElementById("mc-"+k).style.display=t==="c"?"block":"none";document.getElementById("mt-g-"+k).classList.toggle("on",t==="g");document.getElementById("mt-c-"+k).classList.toggle("on",t==="c")}
+function showMsgD(k,t){document.getElementById("dmg-"+k).style.display=t==="g"?"block":"none";document.getElementById("dmc-"+k).style.display=t==="c"?"block":"none";document.getElementById("dmt-g-"+k).classList.toggle("on",t==="g");document.getElementById("dmt-c-"+k).classList.toggle("on",t==="c")}
+
+// ══ CRUD ══════════════════════════════════════════════════════════════════
+function setSyncing(s){document.getElementById("sync-dot").classList.toggle("on",s)}
+async function borrar(col,key,wid){setSyncing(true);await db.ref(`${col}/${key}`).remove();setSyncing(false);document.getElementById(wid)?.remove()}
+function abrirEditar(key,tipo){
+  const c=tipo==="cliente"?clientes[key]:atrasados[key];if(!c)return;
+  editKey=key;editTipo=tipo;
+  document.getElementById("e-nom").value=c.nombre||"";
+  document.getElementById("e-zona").value=c.zona||"Norte";
+  document.getElementById("e-pago").value=c.pago||"Bien";
+  document.getElementById("e-monto").value=c.monto||"";
+  document.getElementById("e-fecha").value=c.fecha||"";
+  document.getElementById("e-cuotas").value=c.cuotas||0;
+  document.getElementById("e-deuda").value=c.deuda||"";
+  document.getElementById("e-ultima").value=c.ultima||"";
+  document.getElementById("e-obs").value=c.obs||"";
+  document.getElementById("modal").classList.add("on");
+}
+function cerrarModal(){document.getElementById("modal").classList.remove("on")}
+async function guardarEdicion(){
+  if(!editKey)return;
+  const upd={nombre:document.getElementById("e-nom").value.trim(),zona:document.getElementById("e-zona").value,pago:document.getElementById("e-pago").value,monto:document.getElementById("e-monto").value.trim(),fecha:document.getElementById("e-fecha").value,cuotas:parseInt(document.getElementById("e-cuotas").value)||0,deuda:document.getElementById("e-deuda").value.trim(),ultima:document.getElementById("e-ultima").value.trim(),obs:document.getElementById("e-obs").value.trim()};
+  setSyncing(true);
+  await db.ref(`${editTipo==="cliente"?"clientes":"atrasados"}/${editKey}`).set(upd);
+  setSyncing(false);
+  cerrarModal();
+}
+async function guardarRen(){
+  const nom=document.getElementById("rn").value.trim();if(!nom){alert("Ingresá el nombre");return}
+  const c={nombre:nom,zona:document.getElementById("rzo").value,pago:document.getElementById("rp").value,monto:document.getElementById("rm").value.trim()||"—",fecha:document.getElementById("rf").value,cuotas:0,deuda:"",ultima:document.getElementById("rlt").value.trim(),obs:document.getElementById("rob").value.trim()};
+  setSyncing(true);await db.ref("clientes").push(c);setSyncing(false);
+  ["rn","rm","rf","rlt","rob"].forEach(id=>document.getElementById(id).value="");
+  const n=document.getElementById("nota");n.style.display="block";setTimeout(()=>n.style.display="none",2500);
+}
+async function guardarDeu(){
+  const nom=document.getElementById("dn").value.trim();if(!nom){alert("Ingresá el nombre");return}
+  const cu=parseInt(document.getElementById("dcu").value)||0;if(cu<=0){alert("Ingresá las cuotas atrasadas");return}
+  const c={nombre:nom,zona:document.getElementById("dzo").value,pago:document.getElementById("dp").value,monto:document.getElementById("dm").value.trim()||"—",cuotas:cu,deuda:document.getElementById("ddu").value.trim(),diasVencido:parseInt(document.getElementById("ddv").value)||0,obs:document.getElementById("dob").value.trim()};
+  setSyncing(true);await db.ref("atrasados").push(c);setSyncing(false);
+  ["dn","dm","dcu","ddu","ddv","dob"].forEach(id=>document.getElementById(id).value="");
+  const n=document.getElementById("nota");n.style.display="block";setTimeout(()=>n.style.display="none",2500);
+}
+
+// ══ RENDERS ═══════════════════════════════════════════════════════════════
+function onZona(){}
+
+function renderAlertas(){
+  const lista=Object.entries(clientes).map(([k,v])=>({...v,_k:k,d:dvencer(v.fecha)})).filter(c=>c.d!==null&&c.d<=30&&(!zonaAl||c.zona===zonaAl)).sort((a,b)=>a.d-b.d);
+  const venc=lista.filter(c=>c.d<0),prox=lista.filter(c=>c.d>=0);
+  let h="";
+  if(!lista.length){h=`<div class="empty">✅ No hay créditos urgentes en los próximos 30 días.</div>`}
+  else{
+    h+=`<div class="banner">🔔 ${lista.length} cliente${lista.length>1?"s":""} requieren atención urgente</div>`;
+    if(venc.length){h+=`<div class="sec">⚠️ Vencidos (${venc.length})</div>`;venc.forEach(c=>h+=cardCliente(c,c._k))}
+    if(prox.length){h+=`<div class="sec">🔔 Vencen en 30 días (${prox.length})</div>`;prox.forEach(c=>h+=cardCliente(c,c._k))}
+  }
+  document.getElementById("c-alertas").innerHTML=h;
+}
+
+function renderClientes(){
+  const zona=zonaCl;
+  const busq=document.getElementById("buscar").value.toLowerCase();
+  let lista=Object.entries(clientes).map(([k,v])=>({...v,_k:k,d:dvencer(v.fecha)}))
+    .filter(c=>(!zona||c.zona===zona)&&(!busq||c.nombre.toLowerCase().includes(busq)))
+    .sort((a,b)=>{if(a.d===null&&b.d===null)return 0;if(a.d===null)return 1;if(b.d===null)return -1;return a.d-b.d});
+  let h=`<div class="sec">${lista.length} cliente${lista.length!==1?"s":""}</div>`;
+  lista.forEach(c=>h+=cardCliente(c,c._k));
+  document.getElementById("c-clientes").innerHTML=lista.length?h:`<div class="empty">No se encontraron clientes.</div>`;
+}
+
+function renderDeudas(){
+  const todos=Object.entries(atrasados).map(([k,v])=>({...v,_k:k})).filter(c=>parseInt(c.cuotas)>0&&(!zonaDe||c.zona===zonaDe));
+  const filt=filtroDeuda==="todos"?todos:todos.filter(c=>{const g=semaf(c.cuotas)?.g;return(filtroDeuda==="critico"&&g===3)||(filtroDeuda==="importante"&&g===2)||(filtroDeuda==="leve"&&g===1)});
+  filt.sort((a,b)=>(parseInt(b.cuotas)||0)-(parseInt(a.cuotas)||0));
+  const cr=todos.filter(c=>semaf(c.cuotas)?.g===3).length,na=todos.filter(c=>semaf(c.cuotas)?.g===2).length,am=todos.filter(c=>semaf(c.cuotas)?.g===1).length;
+  let h=`<div style="background:white;border-radius:14px;border:1px solid var(--borde);padding:14px;margin-bottom:12px">
+    <div style="font-weight:700;font-size:14px;color:var(--azul);margin-bottom:10px">Resumen de deudas</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div style="background:#FFCDD2;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:700;color:#B71C1C">${cr}</div><div style="font-size:10px;color:#B71C1C;font-weight:600">🔴 Críticos</div></div>
+      <div style="background:#FFE0B2;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:700;color:#E65100">${na}</div><div style="font-size:10px;color:#E65100;font-weight:600">🟠 Importantes</div></div>
+      <div style="background:#FFF9C4;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:700;color:#F57F17">${am}</div><div style="font-size:10px;color:#F57F17;font-weight:600">🟡 Leves</div></div>
+    </div>
+  </div>
+  <div class="frow2">
+    <button class="fbtn2 ${filtroDeuda==="todos"?"on":""}" onclick="setFiltroDeuda('todos')">Todos (${todos.length})</button>
+    <button class="fbtn2 ${filtroDeuda==="critico"?"on":""}" onclick="setFiltroDeuda('critico')">🔴 Críticos</button>
+    <button class="fbtn2 ${filtroDeuda==="importante"?"on":""}" onclick="setFiltroDeuda('importante')">🟠 Importantes</button>
+    <button class="fbtn2 ${filtroDeuda==="leve"?"on":""}" onclick="setFiltroDeuda('leve')">🟡 Leves</button>
+  </div>`;
+  if(!filt.length)h+=`<div class="empty">No hay clientes en esta categoría.</div>`;
+  else{h+=`<div class="sec">${filt.length} cliente${filt.length!==1?"s":""}</div>`;filt.forEach(c=>h+=cardAtrasado(c,c._k))}
+  document.getElementById("c-deudas").innerHTML=h;
+}
+function setFiltroDeuda(f){filtroDeuda=f;renderDeudas()}
+
+function renderResumen(){
+  const lc=Object.values(clientes),la=Object.values(atrasados);
+  const urg=lc.filter(c=>{const d=dvencer(c.fecha);return d!==null&&d<=30}).length;
+  document.getElementById("c-resumen").innerHTML=`
+    <div class="sec">Renovaciones</div>
+    <div class="sgrid">
+      <div class="scard"><div class="snum">${lc.length}</div><div class="slbl">Total clientes</div></div>
+      <div class="scard"><div class="snum" style="color:var(--naranja)">${urg}</div><div class="slbl">🔔 Por renovar (30d)</div></div>
+      <div class="scard"><div class="snum" style="color:var(--verde)">${lc.filter(c=>c.pago==="Bien").length}</div><div class="slbl">✅ Pagan bien</div></div>
+      <div class="scard"><div class="snum" style="color:var(--ambar)">${lc.filter(c=>c.pago==="Medio").length}</div><div class="slbl">⚠️ Pagan medio</div></div>
+    </div>
+    <div class="sec">Deudas</div>
+    <div class="sgrid">
+      <div class="scard"><div class="snum" style="color:var(--rojo)">${la.length}</div><div class="slbl">Total deudores</div></div>
+      <div class="scard"><div class="snum" style="color:var(--rojo)">${la.filter(c=>semaf(c.cuotas)?.g===3).length}</div><div class="slbl">🔴 Críticos</div></div>
+    </div>
+    <div class="sec">Por zona</div>
+    ${["Norte","Oeste","Sudeste"].map(z=>{
+      const tot=lc.filter(c=>c.zona===z).length;
+      const u=lc.filter(c=>c.zona===z&&(()=>{const d=dvencer(c.fecha);return d!==null&&d<=30})()).length;
+      const deu=la.filter(c=>c.zona===z).length;
+      return`<div class="scard" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:13px;color:var(--azul)">Zona ${z}</div><div class="slbl">${tot} clientes · ${deu} deudores</div></div>${u>0?`<span class="badge b-vence">🔔 ${u} renovar</span>`:`<span class="badge b-bien">✅ Al día</span>`}</div></div>`;
+    }).join("")}`;
+}
+
+function reRenderAll(){
+  renderAlertas();
+  if(tabActual==="clientes")renderClientes();
+  if(tabActual==="deudas")renderDeudas();
+  if(tabActual==="resumen")renderResumen();
+}
+
+// ══ TABS ══════════════════════════════════════════════════════════════════
+function setTab(t){
+  tabActual=t;
+  document.querySelectorAll(".tab").forEach((el,i)=>el.classList.toggle("on",["alertas","clientes","deudas","nuevo","resumen"][i]===t));
+  document.querySelectorAll(".vista").forEach(v=>v.classList.remove("on"));
+  document.getElementById("v-"+t).classList.add("on");
+  if(t==="clientes")renderClientes();
+  if(t==="deudas")renderDeudas();
+  if(t==="resumen")renderResumen();
+}
+
+// ══ DATOS INICIALES ════════════════════════════════════════════════════════
+const CI=[
+  {nombre:"Figueroa Hernan Agustin",zona:"Norte",pago:"Bien",monto:"$445.180",fecha:"2027-03-01",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Vargas Marcela Noemi",zona:"Norte",pago:"Bien",monto:"$1.212.950",fecha:"2026-06-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:"Dos créditos"},
+  {nombre:"Chavez Juan Manuel",zona:"Norte",pago:"Mal",monto:"$300.000",fecha:"",cuotas:0,deuda:"",ultima:"",obs:"Atrasado CrediColman"},
+  {nombre:"Saavedra Adriana",zona:"Norte",pago:"Bien",monto:"$200.000",fecha:"2026-10-18",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Cañizares Dario Ruben",zona:"Norte",pago:"Medio",monto:"$600.000",fecha:"2026-10-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Vazquez Jaqueline Gloria",zona:"Norte",pago:"Bien",monto:"$150.000",fecha:"2026-09-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Renfiges Jose Jonatan",zona:"Norte",pago:"Medio",monto:"$2.796.730",fecha:"2026-12-03",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Jurado Carlos Modesto",zona:"Norte",pago:"Bien",monto:"$900.000",fecha:"2026-10-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Huanca Lidia",zona:"Norte",pago:"Bien",monto:"$1.161.000",fecha:"2026-09-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Garcia Mirta Estela",zona:"Norte",pago:"Bien",monto:"$800.000",fecha:"2026-06-11",cuotas:0,deuda:"",ultima:"Actualmente",obs:"3 créditos"},
+  {nombre:"Saracho Eduardo Alejandro",zona:"Norte",pago:"Bien",monto:"$1.000.000",fecha:"2026-09-30",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Martinez Luisa Elena",zona:"Norte",pago:"Bien",monto:"$1.000.000",fecha:"2026-10-06",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Espinosa Maria Cristina",zona:"Norte",pago:"Bien",monto:"$2.000.000",fecha:"2026-10-18",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Cutipa Francisco",zona:"Norte",pago:"Mal",monto:"$800.000",fecha:"",cuotas:0,deuda:"",ultima:"",obs:""},
+  {nombre:"Aparicio Nelida",zona:"Norte",pago:"Medio",monto:"$500.000",fecha:"2026-11-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Ortega Carina Mabel",zona:"Oeste",pago:"Bien",monto:"$500.000",fecha:"2026-09-11",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Jorge Jaqueline Melisa",zona:"Oeste",pago:"Medio",monto:"$700.000",fecha:"2026-10-07",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Lamas Alicia Milagro",zona:"Oeste",pago:"Medio",monto:"$500.000",fecha:"2026-10-05",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Mamani Erika Yanina",zona:"Oeste",pago:"Bien",monto:"$800.000",fecha:"2026-06-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:"Dos créditos"},
+  {nombre:"Portal Ortiz Claudia Susana",zona:"Oeste",pago:"Bien",monto:"$500.000",fecha:"2026-09-27",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Vilte Maria De Los Angeles",zona:"Oeste",pago:"Mal",monto:"$1.145.850",fecha:"",cuotas:0,deuda:"",ultima:"",obs:"Paga mal"},
+  {nombre:"Alvarado Diego Armando",zona:"Oeste",pago:"Mal",monto:"$300.000",fecha:"2026-10-06",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Monetengro Maximiliano",zona:"Sudeste",pago:"Bien",monto:"$300.000",fecha:"2026-10-04",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Casimiro Constanza Belen",zona:"Sudeste",pago:"Bien",monto:"$1.586.660",fecha:"2027-01-23",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Coria Pamela Alejandra",zona:"Sudeste",pago:"Bien",monto:"$770.061",fecha:"2026-10-05",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Beeche Isaias Alexander",zona:"Sudeste",pago:"Bien",monto:"$300.004",fecha:"2026-10-23",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Zulema Esteban Mabel",zona:"Sudeste",pago:"Bien",monto:"$800.000",fecha:"2026-10-28",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Navarro Ana Maria",zona:"Sudeste",pago:"Bien",monto:"$500.000",fecha:"2026-10-04",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Aguilera Rogelio",zona:"Sudeste",pago:"Medio",monto:"$975.000",fecha:"2026-12-01",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Fontañez Andrea",zona:"Sudeste",pago:"Mal",monto:"$150.000",fecha:"2026-12-08",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+  {nombre:"Pastrana Miguel Angel",zona:"Sudeste",pago:"Mal",monto:"$551.000",fecha:"",cuotas:0,deuda:"",ultima:"Actualmente",obs:""},
+];
+const AI=[
+  {nombre:"Cutipa Nelly Milagro",zona:"Norte",pago:"Mal",monto:"$2.290.000",cuotas:5,deuda:"$2.290.000",diasVencido:279,obs:"12/12 vencido"},
+  {nombre:"Aparicio Ileana",zona:"Norte",pago:"Mal",monto:"$1.192.000",cuotas:5,deuda:"$1.192.000",diasVencido:285,obs:"38/38 vencido"},
+  {nombre:"Rojo Adet Ricardo",zona:"Norte",pago:"Mal",monto:"$1.543.430",cuotas:5,deuda:"$1.543.430",diasVencido:372,obs:"30/30 vencido"},
+  {nombre:"Krivoshen Maximiliano",zona:"Norte",pago:"Mal",monto:"$1.655.190",cuotas:5,deuda:"$1.655.190",diasVencido:349,obs:"210/210 vencido"},
+  {nombre:"Hessling Virginia Gisel",zona:"Norte",pago:"Mal",monto:"$1.704.800",cuotas:5,deuda:"$1.704.800",diasVencido:349,obs:"210/210 vencido"},
+  {nombre:"Navarro Magdalena Beatriz",zona:"Norte",pago:"Mal",monto:"$133.477",cuotas:10,deuda:"$133.477",diasVencido:1341,obs:"7/7 vencido"},
+  {nombre:"Lozano Jorge Alfredo",zona:"Norte",pago:"Mal",monto:"$84.640",cuotas:10,deuda:"$84.640",diasVencido:1348,obs:"20/20 vencido"},
+  {nombre:"Guanca Juan Roberto",zona:"Norte",pago:"Mal",monto:"$105.008",cuotas:2,deuda:"$105.008",diasVencido:119,obs:"12/12 vencido"},
+  {nombre:"Chocobar Natalia Fabiana",zona:"Norte",pago:"Mal",monto:"$468.535",cuotas:10,deuda:"$468.535",diasVencido:531,obs:"15/15 vencido"},
+  {nombre:"Mercado Federico Cornelio",zona:"Norte",pago:"Mal",monto:"$154.500",cuotas:7,deuda:"$154.500",diasVencido:409,obs:"12/12 vencido"},
+  {nombre:"Martinez Guillermo",zona:"Norte",pago:"Medio",monto:"$1.189.020",cuotas:3,deuda:"$1.006.420",diasVencido:0,obs:"18/20 parcial"},
+  {nombre:"Carrasco Claudio Adrian",zona:"Oeste",pago:"Mal",monto:"$635.430",cuotas:5,deuda:"$635.430",diasVencido:66,obs:"10/10 vencido"},
+  {nombre:"Sacarias Juan Carlos",zona:"Oeste",pago:"Mal",monto:"$412.250",cuotas:10,deuda:"$412.250",diasVencido:690,obs:"6/6 vencido"},
+  {nombre:"Mapelliz Judith Gabriela",zona:"Oeste",pago:"Mal",monto:"$170.945",cuotas:10,deuda:"$170.945",diasVencido:1249,obs:"15/15 vencido"},
+  {nombre:"Castillo Lucas Emanuel",zona:"Oeste",pago:"Mal",monto:"$766.010",cuotas:5,deuda:"$766.010",diasVencido:312,obs:"35/35 vencido"},
+  {nombre:"Romero Liliana",zona:"Oeste",pago:"Mal",monto:"$592.490",cuotas:7,deuda:"$592.490",diasVencido:413,obs:"10/10 vencido"},
+  {nombre:"Vargas Ricardo Amado",zona:"Oeste",pago:"Mal",monto:"$706.600",cuotas:7,deuda:"$706.600",diasVencido:421,obs:"15/15 vencido"},
+  {nombre:"Lamas Alicia Milagro",zona:"Oeste",pago:"Medio",monto:"$225.011",cuotas:3,deuda:"$100.247",diasVencido:0,obs:"18/21 parcial"},
+  {nombre:"Condori Norma Beatriz",zona:"Sudeste",pago:"Mal",monto:"$404.000",cuotas:7,deuda:"$404.000",diasVencido:453,obs:"4/4 vencido"},
+  {nombre:"Orozco Grecia",zona:"Sudeste",pago:"Mal",monto:"$754.756",cuotas:10,deuda:"$754.756",diasVencido:659,obs:"6/6 vencido"},
+  {nombre:"Coronel Juan Carlos",zona:"Sudeste",pago:"Mal",monto:"$468.530",cuotas:10,deuda:"$468.530",diasVencido:783,obs:"10/10 vencido"},
+  {nombre:"Pastrana Miguel Angel",zona:"Sudeste",pago:"Mal",monto:"$505.060",cuotas:5,deuda:"$505.060",diasVencido:294,obs:"10/10 vencido"},
+  {nombre:"Gonzalez Monica Lorena",zona:"Sudeste",pago:"Mal",monto:"$393.790",cuotas:10,deuda:"$393.790",diasVencido:488,obs:"10/10 vencido"},
+  {nombre:"Velasquez Marina Romina",zona:"Sudeste",pago:"Mal",monto:"$622.500",cuotas:7,deuda:"$622.500",diasVencido:438,obs:"15/15 vencido"},
+  {nombre:"Aguilera Rogelio",zona:"Sudeste",pago:"Medio",monto:"$1.035.060",cuotas:3,deuda:"$157.515",diasVencido:0,obs:"16/60 parcial"},
+  {nombre:"Mamani Patricia",zona:"Sudeste",pago:"Medio",monto:"$880.240",cuotas:3,deuda:"$257.688",diasVencido:0,obs:"9/15 parcial"},
+  {nombre:"Castillo Modesta Carina",zona:"Sudeste",pago:"Medio",monto:"$512.511",cuotas:3,deuda:"$138.219",diasVencido:0,obs:"10/21 parcial"},
+];
+
+// ══ INICIO ══════════════════════════════════════════════════════════════════
+async function init(){
+  // Fecha
+  const ds=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  document.getElementById("fecha").textContent=`${ds[hoy.getDay()]} ${hoy.getDate()} de ${ms[hoy.getMonth()]} ${hoy.getFullYear()}`;
+
+  try{
+    // Reglas de Firebase necesitan ser abiertas — usar .read y .write = true
+    const snapC=await db.ref("clientes").once("value");
+    if(!snapC.val()){
+      document.getElementById("loading-msg").textContent="Primera vez: cargando datos...";
+      for(const c of CI)await db.ref("clientes").push(c);
+    }
+    const snapA=await db.ref("atrasados").once("value");
+    if(!snapA.val()){
+      for(const a of AI)await db.ref("atrasados").push(a);
+    }
+    // Listeners tiempo real
+    db.ref("clientes").on("value",s=>{clientes=s.val()||{};reRenderAll()});
+    db.ref("atrasados").on("value",s=>{atrasados=s.val()||{};reRenderAll()});
+    document.getElementById("loading").style.display="none";
+    document.getElementById("app").style.display="block";
+    renderAlertas();
+  }catch(e){
+    document.getElementById("loading-msg").textContent="❌ Error: "+e.message;
+  }
+}
+init();
+</script>
+</body>
+</html>
